@@ -1,6 +1,9 @@
 #ifndef __JPEG_H__
 #define __JPEG_H__
 
+#include <stdint.h>
+#include <stdbool.h>
+
 typedef unsigned char color;
 
 /*

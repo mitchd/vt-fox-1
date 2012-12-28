@@ -1,9 +1,9 @@
 #CC=gcc
-CFLAGS =-g -O2 
+CFLAGS =-g -O2 -std=c99 -D__X86
 CPPFLAGS =-O2 
 CFLAGS+=-Wa,-a=$<.s
 LIBS =
-OBJECTS = dct.o jpegenc.o
+OBJECTS = dct.o jpegenc.o rgbdata.o
 
 jpegant: $(OBJECTS)
 	$(CC) $(CFLAGS) main.c $(OBJECTS) -o jpegant
