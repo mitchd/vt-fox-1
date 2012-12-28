@@ -1,5 +1,5 @@
 #CC=gcc
-CFLAGS =-g -O2 -std=c99 -D__X86
+CFLAGS =-g -ggdb -O -std=c99 -D__X86
 CPPFLAGS =-O2 
 CFLAGS+=-Wa,-a=$<.s
 LIBS =

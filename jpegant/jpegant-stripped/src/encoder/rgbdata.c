@@ -29,7 +29,7 @@ void close_rgb( char *filename, RGB *mmap_addr )
 	return munmap( mmap_addr, sbuf.st_size );
 }
 
-bool load_rgb( char *filename, RGB *mmap_addr )
+bool load_rgb( char *filename, RGB **mmap_addr )
 {
 	int fd;
 	struct stat sbuf;
@@ -42,10 +42,10 @@ bool load_rgb( char *filename, RGB *mmap_addr )
 		return false;
 	}
 
-	mmap_addr = mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, 
+	*mmap_addr = mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, 
 			fd, 0);
 	
-	if( mmap_addr == -1){
+	if( *mmap_addr == -1){
 		return false;
 	}
 

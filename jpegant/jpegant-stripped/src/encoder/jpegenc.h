@@ -8,23 +8,23 @@ typedef unsigned char color;
 
 /*
 RGB to YCbCr Conversion:
-*/
+
 // Y = 0.299*R + 0.587*G + 0.114*B
-__inline color RGB2Y(const color r, const color g, const color b)
+inline color RGB2Y(const color r, const color g, const color b)
 {
 	return (32768 + 19595*r + 38470*g + 7471*b) >> 16;
 }
 // Cb = 128 - 0.1687*R - 0.3313*G + 0.5*B
-__inline color RGB2Cb(const color r, const color g, const color b)
+inline color RGB2Cb(const color r, const color g, const color b)
 {
 	return (8421376 - 11058*r - 21709*g + 32767*b) >> 16;
 }
 // Cr = 128 + 0.5*R - 0.4187*G - 0.0813*B
-__inline color RGB2Cr(const color r, const color g, const color b)
+inline color RGB2Cr(const color r, const color g, const color b)
 {
 	return (8421376 + 32767*r - 27438*g - 5329*b) >> 16;
 }
-
+*/
 static int file_jpg;
 
 //---------------- J P E G ---------------

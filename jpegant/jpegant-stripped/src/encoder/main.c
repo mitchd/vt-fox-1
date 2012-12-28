@@ -10,10 +10,24 @@
 #include "dct.h"
 #include "jpegenc.h"
 
+//static int file_jpg;
 /*void write_jpeg(const unsigned char buff[], const unsigned size)
 {
 	write(file_jpg, buff, size);
 }*/
+
+inline color RGB2Y(const color r, const color g, const color b)
+{
+        return (32768 + 19595*r + 38470*g + 7471*b) >> 16;
+}
+inline color RGB2Cb(const color r, const color g, const color b)
+{
+        return (8421376 - 11058*r - 21709*g + 32767*b) >> 16;
+}
+inline color RGB2Cr(const color r, const color g, const color b)
+{
+        return (8421376 + 32767*r - 27438*g - 5329*b) >> 16;
+}
 
 
 // chroma subsampling, i.e. converting a 16x16 RGB block into 8x8 Cb and Cr
@@ -48,7 +62,7 @@ int main (int argc, char *argv[])
 
 	RGB *mmap_addr = NULL;
 
-	if (!load_rgb(argv[1],mmap_addr)) {
+	if (!load_rgb(argv[1],&mmap_addr)) {
 		fprintf(stderr, "Error: cannot open %s\n", argv[1]);
 		return -1;
 	}
@@ -58,7 +72,7 @@ int main (int argc, char *argv[])
 	short Cb8x8[8][8];
 	short Cr8x8[8][8];
 
-	if ((file_jpg = open(argv[2], O_CREAT|O_TRUNC|O_WRONLY )) < 0) {
+	if ((file_jpg = open(argv[2], O_CREAT|O_TRUNC|O_WRONLY,S_IRUSR|S_IWUSR )) < 0) {
 		fprintf(stderr, "Error: cannot create %s (%i)\n", argv[2], errno);
 		return -1;
 	}
@@ -74,7 +88,7 @@ int main (int argc, char *argv[])
 	for (unsigned y = 0; y < IMG_HEIGHT-15; y += 16) {
 		for (unsigned x = 0; x < IMG_WIDTH-15; x += 16)
 		{
-			if (rgb_get_block(x, y, 16, 16, (RGB*)RGB16x16,
+			if (!rgb_get_block(x, y, 16, 16, (RGB*)RGB16x16,
 				mmap_addr)) {
 				printf("Error: getBlock(%d,%d)\n", x, y);
 				break;
