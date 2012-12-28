@@ -1,4 +1,3 @@
-#include "arch.h"
 #include "dct.h"
 
 
@@ -19,7 +18,7 @@
 ******************************************************************************/
 void dct(short pixels[8][8], short data[8][8])
 {
-	CACHE_ALIGN short rows[8][8];
+	short rows[8][8];
 	unsigned          i;
 
 	static const short // Ci = cos(i*PI/16)*(1 << 14);

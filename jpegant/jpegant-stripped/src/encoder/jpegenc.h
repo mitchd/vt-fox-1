@@ -1,9 +1,7 @@
 #ifndef __JPEG_H__
 #define __JPEG_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+typedef unsigned char color;
 
 /*
 RGB to YCbCr Conversion:
@@ -23,6 +21,8 @@ __inline color RGB2Cr(const color r, const color g, const color b)
 {
 	return (8421376 + 32767*r - 27438*g - 5329*b) >> 16;
 }
+
+static int file_jpg;
 
 //---------------- J P E G ---------------
 
@@ -50,8 +50,5 @@ void huffman_start(short height, short width);
 void huffman_stop(void);
 void huffman_encode(huffman_t *const ctx, const short data[64]);
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif//__JPEG_H__

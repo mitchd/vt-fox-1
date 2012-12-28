@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <math.h>
@@ -8,17 +9,14 @@
 #include <string.h>
 #include <errno.h>
 
-#include "arch.h"
 #include "bitmap.h"
 #include "dct.h"
 #include "jpegenc.h"
 
-static int file_jpg = 0;
-
-void write_jpeg(const unsigned char buff[], const unsigned size)
+/*void write_jpeg(const unsigned char buff[], const unsigned size)
 {
 	write(file_jpg, buff, size);
-}
+}*/
 
 
 // chroma subsampling, i.e. converting a 16x16 RGB block into 8x8 Cb and Cr
@@ -63,12 +61,12 @@ int main (int argc, char *argv[])
 		return -1;
 	}
 
-	CACHE_ALIGN BGR   RGB16x16[16][16];
-	CACHE_ALIGN short Y8x8[2][2][8][8]; // four 8x8 blocks - 16x16
-	CACHE_ALIGN short Cb8x8[8][8];
-	CACHE_ALIGN short Cr8x8[8][8];
+	BGR   RGB16x16[16][16];
+	short Y8x8[2][2][8][8]; // four 8x8 blocks - 16x16
+	short Cb8x8[8][8];
+	short Cr8x8[8][8];
 
-	if ((file_jpg = open(argv[2], O_CREAT|O_TRUNC|O_WRONLY|O_BINARY, S_IWRITE)) < 0) {
+	if ((file_jpg = open(argv[2], O_CREAT|O_TRUNC|O_WRONLY, S_IWRITE|S_IREAD)) < 0) {
 		fprintf(stderr, "Error: cannot create %s (%s)\n", argv[2], strerror(errno));
 		return -1;
 	}

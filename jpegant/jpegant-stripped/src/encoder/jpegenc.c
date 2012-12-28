@@ -1,6 +1,5 @@
-#include "arch.h"
 #include "jpegenc.h"
-
+#include <unistd.h>
 
 /* tables from JPEG standard
 const unsigned char qtable_std_lum[8][8] =
@@ -301,6 +300,11 @@ bitbuffer_t;
 
 static bitbuffer_t bitbuf;
 
+
+void write_jpeg(const unsigned char buff[], const unsigned size)
+{
+        write(file_jpg, buff, size);
+}
 
 /******************************************************************************
 **  quantize
