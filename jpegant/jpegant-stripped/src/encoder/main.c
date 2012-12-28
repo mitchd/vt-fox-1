@@ -10,7 +10,7 @@
 #include "dct.h"
 #include "jpegenc.h"
 
-//static int file_jpg;
+int file_jpg;
 /*void write_jpeg(const unsigned char buff[], const unsigned size)
 {
 	write(file_jpg, buff, size);

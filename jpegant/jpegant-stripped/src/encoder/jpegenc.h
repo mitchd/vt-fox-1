@@ -25,7 +25,7 @@ inline color RGB2Cr(const color r, const color g, const color b)
 	return (8421376 + 32767*r - 27438*g - 5329*b) >> 16;
 }
 */
-static int file_jpg;
+extern int file_jpg;
 
 //---------------- J P E G ---------------
 

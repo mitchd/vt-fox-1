@@ -1,6 +1,5 @@
 #CC=gcc
 CFLAGS =-g -ggdb -O -std=c99 -D__X86
-CPPFLAGS =-O2 
 CFLAGS+=-Wa,-a=$<.s
 LIBS =
 OBJECTS = dct.o jpegenc.o rgbdata.o
