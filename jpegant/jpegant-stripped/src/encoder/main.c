@@ -11,10 +11,11 @@
 #include "jpegenc.h"
 
 int file_jpg;
-/*void write_jpeg(const unsigned char buff[], const unsigned size)
+
+void write_jpeg(const unsigned char buff[], const unsigned size)
 {
 	write(file_jpg, buff, size);
-}*/
+}
 
 inline color RGB2Y(const color r, const color g, const color b)
 {
@@ -31,7 +32,7 @@ inline color RGB2Cr(const color r, const color g, const color b)
 
 
 // chroma subsampling, i.e. converting a 16x16 RGB block into 8x8 Cb and Cr
-void subsample(const RGB rgb[16][16], short cb[8][8], short cr[8][8])
+void subsample(RGB rgb[16][16], short cb[8][8], short cr[8][8])
 {
 	for (unsigned r = 0; r < 8; r++)
 	for (unsigned c = 0; c < 8; c++)
