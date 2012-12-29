@@ -58,6 +58,7 @@ static void hal_lld_backup_domain_init(void) {
   /* Backup domain access enabled and left open.*/
   PWR->CR |= PWR_CR_DBP;
 
+#if HAL_USE_RTC
   /* Reset BKP domain if different clock source selected.*/
   if ((RCC->BDCR & STM32_RTCSEL_MASK) != STM32_RTCSEL){
     /* Backup domain reset.*/
@@ -70,7 +71,7 @@ static void hal_lld_backup_domain_init(void) {
   RCC->BDCR |= RCC_BDCR_LSEON;
   while ((RCC->BDCR & RCC_BDCR_LSERDY) == 0)
     ;                                     /* Waits until LSE is stable.   */
-#endif
+#endif /* STM32_LSE_ENABLED */
 
 #if STM32_RTCSEL != STM32_RTCSEL_NOCLOCK
   /* If the backup domain hasn't been initialized yet then proceed with
@@ -79,10 +80,14 @@ static void hal_lld_backup_domain_init(void) {
     /* Selects clock source.*/
     RCC->BDCR |= STM32_RTCSEL;
 
+    /* Prescaler value loaded in registers.*/
+    rtc_lld_set_prescaler();
+
     /* RTC clock enabled.*/
     RCC->BDCR |= RCC_BDCR_RTCEN;
   }
 #endif /* STM32_RTCSEL != STM32_RTCSEL_NOCLOCK */
+#endif /* HAL_USE_RTC */
 }
 
 /*===========================================================================*/

@@ -1,28 +1,3 @@
-(Original README contents are below)
-
-
-This is the beginning of Virginia Tech's AMSAT FOX-1 Camera development.
-
-We're beginning with the ChibiOS/RT demo on the STM32F4-DISCOVERY board to
-start working toward implementing our code onto an STM32L151 processor.
-
-We need a combination of STM32F4 and STM32L1 Discovery boards to ensure that
-our code is portable.
-
-This project is based off ChibiOS/RT and jpegant
-http://www.chibios.org/dokuwiki/doku.php
-http://code.google.com/p/jpegant/
-
-ChibiOS/RT is licensed under the GPLv3 license
-jpegant is licensed under the GPLv2 license
-
-We have a licensing problem it looks like.
-
-
-
-
-
-
 *****************************************************************************
 ** ChibiOS/RT port for ARM-Cortex-M4 STM32F407.                            **
 *****************************************************************************

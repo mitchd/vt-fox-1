@@ -180,15 +180,15 @@ static void usart_start(UARTDriver *uartp) {
 
   /* Note that some bits are enforced because required for correct driver
      operations.*/
+  u->CR2 = uartp->config->cr2 | USART_CR2_LBDIE;
+  u->CR3 = uartp->config->cr3 | USART_CR3_DMAT | USART_CR3_DMAR |
+                                USART_CR3_EIE;
   if (uartp->config->txend2_cb == NULL)
     cr1 = USART_CR1_UE | USART_CR1_PEIE | USART_CR1_TE | USART_CR1_RE;
   else
     cr1 = USART_CR1_UE | USART_CR1_PEIE | USART_CR1_TE | USART_CR1_RE |
           USART_CR1_TCIE;
   u->CR1 = uartp->config->cr1 | cr1;
-  u->CR2 = uartp->config->cr2 | USART_CR2_LBDIE;
-  u->CR3 = uartp->config->cr3 | USART_CR3_DMAT | USART_CR3_DMAR |
-                                USART_CR3_EIE;
 
   /* Starting the receiver idle loop.*/
   set_rx_idle_loop(uartp);
@@ -356,6 +356,7 @@ void uart_lld_init(void) {
 #if STM32_UART_USE_USART1
   uartObjectInit(&UARTD1);
   UARTD1.usart   = USART1;
+  UARTD1.dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
   UARTD1.dmarx   = STM32_DMA_STREAM(STM32_UART_USART1_RX_DMA_STREAM);
   UARTD1.dmatx   = STM32_DMA_STREAM(STM32_UART_USART1_TX_DMA_STREAM);
 #endif
@@ -363,6 +364,7 @@ void uart_lld_init(void) {
 #if STM32_UART_USE_USART2
   uartObjectInit(&UARTD2);
   UARTD2.usart   = USART2;
+  UARTD2.dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
   UARTD2.dmarx   = STM32_DMA_STREAM(STM32_UART_USART2_RX_DMA_STREAM);
   UARTD2.dmatx   = STM32_DMA_STREAM(STM32_UART_USART2_TX_DMA_STREAM);
 #endif
@@ -370,6 +372,7 @@ void uart_lld_init(void) {
 #if STM32_UART_USE_USART3
   uartObjectInit(&UARTD3);
   UARTD3.usart   = USART3;
+  UARTD3.dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
   UARTD3.dmarx   = STM32_DMA_STREAM(STM32_UART_USART3_RX_DMA_STREAM);
   UARTD3.dmatx   = STM32_DMA_STREAM(STM32_UART_USART3_TX_DMA_STREAM);
 #endif
@@ -383,8 +386,6 @@ void uart_lld_init(void) {
  * @notapi
  */
 void uart_lld_start(UARTDriver *uartp) {
-
-  uartp->dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
 
   if (uartp->state == UART_STOP) {
 #if STM32_UART_USE_USART1
