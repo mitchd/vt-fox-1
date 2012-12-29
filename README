@@ -38,3 +38,9 @@ board
 ChibiOS_doc/
 
 -Documentation for ChibiOS/RT
+
+ChibiOS_2.4.3/
+
+-Base code for ChibiOS, used as a reference for development in the stm32*-devel
+dirs.  There is useful code in ChibiOS_2.4.3/test/ and ChibiOS_2.4.3/testhal/
+to reference on using the OS's feature set.

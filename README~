@@ -1,0 +1,40 @@
+This is the code tree and supporting documents for Virginia Tech's camera
+experiment boards that will fly on AMSAT's FOX-1 satellite.
+
+The goals of this system are to fly a 640x480 camera and:
+1) Upon (UART) command, capture an image from the camera and convert to jpeg
+2) Upon command, relay the jpeg image data over UART to the IHU (internal
+housekeeping unit)
+
+
+Folder descriptions:
+
+datasheets/
+
+-Contains datasheets of the modules used in both prototyping and the board
+specification
+
+pin_descriptions/
+
+-Contains a spreadsheet which maps out the pins of the final board and provides
+a reference for the pin alternate function register configuration bits
+
+jpegant/
+
+-This is the jpeg compression library that we're using.  A stripped-down CLI
+version is located in: jpegantt/jpegant-stripped/src/encoder
+-The stripped-down CLI version uses a file containing raw RGB values for a
+640x480 picture to convert to jpeg
+
+stm32f4-devel/
+
+-Contains the ChibiOS/RT source tree to work with the stm32f4-discovery board
+
+stm32l1-devel/
+
+-Will contain the ChibiOS/RT source tree to work with the stm32l1-discovery
+board
+
+ChibiOS_doc/
+
+-Documentation for ChibiOS/RT
