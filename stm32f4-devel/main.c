@@ -27,24 +27,7 @@
 
 #include "ch.h"
 #include "hal.h"
-#include "lis302dl.h"
 #include "chprintf.h"
-
-static void spicb(SPIDriver *spip);
-
-
-/*
- * SPI1 configuration structure.
- * Speed 5.25MHz, CPHA=1, CPOL=1, 8bits frames, MSb transmitted first.
- * The slave select line is the pin GPIOE_CS_SPI on the port GPIOE.
- */
-static const SPIConfig spi1cfg = {
-  NULL,
-  /* HW dependent part.*/
-  GPIOE,
-  GPIOE_CS_SPI,
-  SPI_CR1_BR_0 | SPI_CR1_BR_1 | SPI_CR1_CPOL | SPI_CR1_CPHA
-};
 
 /*
  * This is a periodic thread that does absolutely nothing except flashing
@@ -60,6 +43,27 @@ static msg_t Thread1(void *arg) {
     chThdSleepMilliseconds(500);
     palClearPad(GPIOD, GPIOD_LED3);     /* Orange.  */
     chThdSleepMilliseconds(500);
+  }
+  return 0;
+}
+
+
+/*
+ * Let's try to make a UART3 I/O thread
+ */
+//Setup the thread working area
+static WORKING_AREA(waUART_Thread, 128);
+//Thread function
+static msg_t UART_Thread(void* arg){
+  (void)arg;
+  //Signal in this thread with the blue LED
+  palSetPad(GPIOD, GPIOD_LED6);
+  while (TRUE) {
+    /*
+     *Do UART Stuff
+     */
+    chprintf((BaseChannel *)&SD3, "In UART3 Working Thread\n\r");
+    chThdSleepMilliseconds(1000);
   }
   return 0;
 }
@@ -92,16 +96,12 @@ int main(void) {
    */
   chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, Thread1, NULL);
 
-  /*
-   * Initializes the SPI driver 1 in order to access the MEMS. The signals
-   * are initialized in the board file.
-   * Several LIS302DL registers are then initialized.
-   */
-  spiStart(&SPID1, &spi1cfg);
-  lis302dlWriteRegister(&SPID1, LIS302DL_CTRL_REG1, 0x43);
-  lis302dlWriteRegister(&SPID1, LIS302DL_CTRL_REG2, 0x00);
-  lis302dlWriteRegister(&SPID1, LIS302DL_CTRL_REG3, 0x00);
 
+  /*
+   * Create our UART thread
+   */
+  chThdCreateStatic(waUART_Thread, sizeof(waUART_Thread), NORMALPRIO,
+                    UART_Thread,NULL);
   /*
    * Normal main() thread activity, in this demo it does nothing except
    * sleeping in a loop and check the button state, when the button is
@@ -109,12 +109,7 @@ int main(void) {
    * driver 2.
    */
   while (TRUE) {
-    int8_t x, y, z;
-
-    x = (int8_t)lis302dlReadRegister(&SPID1, LIS302DL_OUTX);
-    y = (int8_t)lis302dlReadRegister(&SPID1, LIS302DL_OUTY);
-    z = (int8_t)lis302dlReadRegister(&SPID1, LIS302DL_OUTZ);
-    chprintf((BaseChannel *)&SD3, "%d, %d, %d\r\n", x, y, z);
+    chprintf((BaseChannel *)&SD3, "Inside main() thread\r\n");
     chThdSleepMilliseconds(500);
   }
 }
