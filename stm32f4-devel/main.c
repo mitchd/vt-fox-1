@@ -47,31 +47,6 @@ static const SPIConfig spi1cfg = {
 };
 
 /*
- * SPI2 configuration structure.
- * Speed 21MHz, CPHA=0, CPOL=0, 16bits frames, MSb transmitted first.
- * The slave select line is the pin 12 on the port GPIOA.
- */
-static const SPIConfig spi2cfg = {
-  spicb,
-  /* HW dependent part.*/
-  GPIOB,
-  12,
-  SPI_CR1_DFF
-};
-
-
-/*
- * SPI end transfer callback.
- */
-static void spicb(SPIDriver *spip) {
-
-  /* On transfer end just releases the slave select line.*/
-  chSysLockFromIsr();
-  spiUnselectI(spip);
-  chSysUnlockFromIsr();
-}
-
-/*
  * This is a periodic thread that does absolutely nothing except flashing
  * a LED.
  */
@@ -105,29 +80,12 @@ int main(void) {
   chSysInit();
 
   /*
-   * Activates the serial driver 2 using the driver default configuration.
-   * PA2(TX) and PA3(RX) are routed to USART2.
+   * Activates the serial driver 3.
+   * PB10(TX) and PB11(RX) are routed to USART3.
    */
   sdStart(&SD3, NULL);
+  palSetPadMode(GPIOB, 10, PAL_MODE_ALTERNATE(7));
   palSetPadMode(GPIOB, 11, PAL_MODE_ALTERNATE(7));
-  palSetPadMode(GPIOB, 12, PAL_MODE_ALTERNATE(7));
-
-  /*
-   * Initializes the SPI driver 2. The SPI2 signals are routed as follow:
-   * PB12 - NSS.
-   * PB13 - SCK.
-   * PB14 - MISO.
-   * PB15 - MOSI.
-   */
-  spiStart(&SPID2, &spi2cfg);
-  palSetPad(GPIOB, 12);
-  palSetPadMode(GPIOB, 12, PAL_MODE_OUTPUT_PUSHPULL |
-                           PAL_STM32_OSPEED_HIGHEST);           /* NSS.     */
-  palSetPadMode(GPIOB, 13, PAL_MODE_ALTERNATE(5) |
-                           PAL_STM32_OSPEED_HIGHEST);           /* SCK.     */
-  palSetPadMode(GPIOB, 14, PAL_MODE_ALTERNATE(5));              /* MISO.    */
-  palSetPadMode(GPIOB, 15, PAL_MODE_ALTERNATE(5) |
-                           PAL_STM32_OSPEED_HIGHEST);           /* MOSI.    */
 
   /*
    * Creates the example thread.
