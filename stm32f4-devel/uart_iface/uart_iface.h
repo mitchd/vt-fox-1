@@ -20,15 +20,34 @@
 #ifndef __UART_IFACE_H__
 #include "ch.h"
 #include "hal.h"
-
+#include "chprintf.h"
 #define __UART_IFACE_H__
 
+//Define LOCAL_ECHO to echo characters sent through UART (debugging stuffs)
+//#define LOCAL_ECHO
+
+
+//Define RELEASE_VERSION to use the release functionality (undef'ing this
+//allows you to retain the command parsing code inside an ifdef while working
+//on development code
+#define RELEASE_VERSION
 
 extern WORKING_AREA(waUART_Thread, 128);
 msg_t UART_Thread(void* arg);
 
+#ifdef RELEASE_VERSION
+
+#define COMMAND_SIZE 1
+
+#else
+
+#define COMMAND_SIZE 1
+
+#endif
+
 #define UART_COMM_IDLE 0
 #define UART_COMM_READ_COMMAND 1
+#define UART_COMM_ERROR -1
 #define UART_COMM_SEND_DATA 2
 
 
