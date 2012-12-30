@@ -27,8 +27,8 @@
 
 #include "ch.h"
 #include "hal.h"
+#include "uart_iface.h"
 #include "chprintf.h"
-
 /*
  * This is a periodic thread that does absolutely nothing except flashing
  * a LED.
@@ -47,26 +47,8 @@ static msg_t Thread1(void *arg) {
   return 0;
 }
 
+WORKING_AREA(waUART_Thread, 128);
 
-/*
- * Let's try to make a UART3 I/O thread
- */
-//Setup the thread working area
-static WORKING_AREA(waUART_Thread, 128);
-//Thread function
-static msg_t UART_Thread(void* arg){
-  (void)arg;
-  //Signal in this thread with the blue LED
-  palSetPad(GPIOD, GPIOD_LED6);
-  while (TRUE) {
-    /*
-     *Do UART Stuff
-     */
-    chprintf((BaseChannel *)&SD3, "In UART3 Working Thread\n\r");
-    chThdSleepMilliseconds(1000);
-  }
-  return 0;
-}
 
 /*
  * Application entry point.
@@ -109,7 +91,7 @@ int main(void) {
    * driver 2.
    */
   while (TRUE) {
-    chprintf((BaseChannel *)&SD3, "Inside main() thread\r\n");
+//    chprintf((BaseChannel *)&SD3, "Inside main() thread\r\n");
     chThdSleepMilliseconds(500);
   }
 }
