@@ -24,13 +24,13 @@
 #define __UART_IFACE_H__
 
 //Define LOCAL_ECHO to echo characters sent through UART (debugging stuffs)
-//#define LOCAL_ECHO
+#define LOCAL_ECHO
 
 
 //Define RELEASE_VERSION to use the release functionality (undef'ing this
 //allows you to retain the command parsing code inside an ifdef while working
 //on development code
-#define RELEASE_VERSION
+//#define RELEASE_VERSION
 
 extern WORKING_AREA(waUART_Thread, 128);
 msg_t UART_Thread(void* arg);

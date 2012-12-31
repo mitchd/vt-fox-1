@@ -7,7 +7,7 @@ static const uint8_t CMD_ABORT = (uint8_t)'A';
 //Responses to send to the IHU
 static const uint8_t RESP_OK = (uint8_t)'K';
 static const uint8_t RESP_RX_ERR = (uint8_t)'E';
-//
+
 /*
  * UART_Thread
  *
@@ -94,17 +94,10 @@ msg_t UART_Thread(void* arg){
       if( events & SD_OVERRUN_ERROR ){
         //We had a buffer overrun in grabbing this data
         //Toggle the RED LED
-        chprintf((BaseChannel *)&SD3, "%d %d\r\n", readSize, COMMAND_SIZE);
-        palTogglePad(GPIOD, GPIOD_LED5);
         myUART_state = UART_COMM_ERROR;
 	writeSize = sdAsynchronousWrite( &SD3, &RESP_RX_ERR, COMMAND_SIZE );
         chEvtClearFlags( SD_OVERRUN_ERROR );
       }else{
-	#ifdef LOCAL_ECHO
-        //We'll just echo for now and see what happens
-        writeSize = sdAsynchronousWrite( &SD3, read_buffer, COMMAND_SIZE );
-	sdAsynchronousWrite( &SD3, (uint8_t*)"\r\n", 2 );
-	#endif
 	/*
          *Parse the commands... if COMMAND_LENGTH changes, this needs to change
          *I don't think there's a good way to make it generic
@@ -137,6 +130,37 @@ msg_t UART_Thread(void* arg){
  *Enable this by ensuring RELEASE_VERSION is undefined
  *
  */
+  while (TRUE) {
+    //Wait for a serial event:
+    myUART_state = UART_COMM_IDLE;
+    events = chEvtWaitOne( myUART_events );
+    //Now we have an event
+    if( events & IO_INPUT_AVAILABLE ){
+      //We have data available on the input
+      myUART_state = UART_COMM_READ_COMMAND;
+      readSize = sdRead( &SD3, read_buffer, COMMAND_SIZE );
+      chEvtClearFlags( IO_INPUT_AVAILABLE );
+      //Check for RX errors
+      if( events & SD_OVERRUN_ERROR ){
+        //We had a buffer overrun in grabbing this data
+        //Toggle the RED LED
+        palTogglePad(GPIOD, GPIOD_LED5);
+        myUART_state = UART_COMM_ERROR;
+        chEvtClearFlags( SD_OVERRUN_ERROR );
+      }else{
+	#ifdef LOCAL_ECHO
+        //We'll just echo for now and see what happens
+        writeSize = sdAsynchronousWrite( &SD3, read_buffer, COMMAND_SIZE );
+	#endif
+	/*
+         *Parse the commands... if COMMAND_LENGTH changes, this needs to change
+         *I don't think there's a good way to make it generic
+ 	 */
+      }
+    }
+    if( events & IO_OUTPUT_EMPTY )
+      chEvtClearFlags( IO_OUTPUT_EMPTY );
+  }
 #endif
   return 0;
 }
