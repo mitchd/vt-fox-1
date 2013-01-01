@@ -28,7 +28,9 @@
 #include "ch.h"
 #include "hal.h"
 #include "uart_iface.h"
+#include "spi_flash.h"
 #include "chprintf.h"
+
 /*
  * This is a periodic thread that does absolutely nothing except flashing
  * a LED.
@@ -84,6 +86,8 @@ int main(void) {
    */
   chThdCreateStatic(waUART_Thread, sizeof(waUART_Thread), NORMALPRIO,
                     UART_Thread,NULL);
+
+  configureSPIFlash();
   /*
    * Normal main() thread activity, in this demo it does nothing except
    * sleeping in a loop and check the button state, when the button is

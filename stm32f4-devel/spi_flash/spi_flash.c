@@ -3,7 +3,14 @@
 static uint8_t flash_addr[3];
 static uint8_t flash_cmd;
 
-void configureSPI_Flash(void){
+static const SPIConfig spi1cfg = {
+  NULL,         //Callback function
+  GPIOA,        //NSS Port
+  3,            //NSS Pad
+  0
+};
+
+void configureSPIFlash(void){
   //Initialize the SPI port
   spiStart(&SPID1, &spi1cfg);
 
@@ -101,7 +108,7 @@ void flashWriteBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   //Transmit the write enable command
   spiSend( &SPID1, 1, &flash_cmd );
   //AAI Command
-  flash_cmd = FLASH_AAI_PROGRAM
+  flash_cmd = FLASH_AAI_PROGRAM;
   //Transmit the AAI command
   spiSend( &SPID1, 1, &flash_cmd );
   //Transmit the destination address
@@ -113,7 +120,7 @@ void flashWriteBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   //Loop through the rest of data
   while( tx_bytes < n ){
     if( !checkBusy() ){  //Check for write complete
-      spiSelect( &SPID1 )
+      spiSelect( &SPID1 );
       //Set the AAI command
       flash_cmd = FLASH_AAI_PROGRAM;
       //Transmit the AAI command
@@ -161,14 +168,14 @@ uint8_t flashReadByte( uint32_t addr ){
   //Set high speed read cmd
   flash_cmd = FLASH_HS_READ;
   //Send cmd
-  spiSelect( &SPID1 )
+  spiSelect( &SPID1 );
   spiSend( &SPID1, 1, &flash_cmd );
   //Send address
   spiSend( &SPID1, 3, flash_addr );
   //Don't care byte
-  spySend( &SPID1, 1, &zero );
+  spiSend( &SPID1, 1, &zero );
   //Read byte
-  spiRead( &SPID1, 1, &returnByte );
+  spiReceive( &SPID1, 1, &returnByte );
   //Release the device
   spiUnselect( &SPID1 );
   spiReleaseBus( &SPID1 );
@@ -178,7 +185,6 @@ uint8_t flashReadByte( uint32_t addr ){
 
 void flashReadBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   //For this function, we'll use the high-speed read functionality
-  uint8_t returnByte;
   uint8_t zero = 0x00;
   //Ensure that we get a legitimate address
   addr &= FLASH_HIGH_ADDR-1;
@@ -193,14 +199,14 @@ void flashReadBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   //Set high speed read cmd
   flash_cmd = FLASH_HS_READ;
   //Send cmd
-  spiSelect( &SPID1 )
+  spiSelect( &SPID1 );
   spiSend( &SPID1, 1, &flash_cmd );
   //Send address
   spiSend( &SPID1, 3, flash_addr );
   //Don't care byte
-  spySend( &SPID1, 1, &zero );
+  spiSend( &SPID1, 1, &zero );
   //Read bytes
-  spiRead( &SPID1, n, data );
+  spiReceive( &SPID1, n, data );
   //Release the device
   spiUnselect( &SPID1 );
   spiReleaseBus( &SPID1 );

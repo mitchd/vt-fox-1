@@ -20,7 +20,7 @@ static void showMenu(void){
   return;
 }
 static void showWriteBytePrompt(void){
-  chprintf((BaseChannel*)&SD3, "\r\n<Hex Address> <Hex Byte>: 00100F A8\r\n");
+  chprintf((BaseChannel*)&SD3, "\r\n<Hex Address> <Hex Byte>: 00100F Z\r\n");
   chprintf((BaseChannel*)&SD3, " :>");
 }
 static void showReadBytePrompt(void){
@@ -97,8 +97,6 @@ msg_t UART_Thread(void* arg){
   //Keep track of our current communication state with myUART_state
   //This should be transformed to a global, signal, something....
   uint8_t myUART_state = UART_COMM_IDLE;
-  //Track the size of our reads and writes to the serial port
-  size_t readSize, writeSize;
   //recorded events
   eventmask_t events;
 /*
@@ -116,14 +114,14 @@ msg_t UART_Thread(void* arg){
     if( events & IO_INPUT_AVAILABLE ){
       //We have data available on the input
       myUART_state = UART_COMM_READ_COMMAND;
-      readSize = sdRead( &SD3, read_buffer, COMMAND_SIZE );
+      sdRead( &SD3, read_buffer, COMMAND_SIZE );
       chEvtClearFlags( IO_INPUT_AVAILABLE );
       //Check for RX errors
       if( events & SD_OVERRUN_ERROR ){
         //We had a buffer overrun in grabbing this data
         //Toggle the RED LED
         myUART_state = UART_COMM_ERROR;
-	writeSize = sdAsynchronousWrite( &SD3, &RESP_RX_ERR, COMMAND_SIZE );
+	sdAsynchronousWrite( &SD3, &RESP_RX_ERR, COMMAND_SIZE );
         chEvtClearFlags( SD_OVERRUN_ERROR );
       }else{
 	/*
@@ -166,16 +164,16 @@ msg_t UART_Thread(void* arg){
     //Now we have an event
     if( events & IO_INPUT_AVAILABLE ){
       //We have data available on the input
-      readSize = sdRead( &SD3, read_buffer, COMMAND_SIZE );
+      sdRead( &SD3, read_buffer, COMMAND_SIZE );
       chEvtClearFlags( IO_INPUT_AVAILABLE );
       if( read_buffer[0] == 0x8 ){ //Handle some backspaceage
         input_pos--;
-        if( input_pos < 0 )
+        if( input_pos == (uint8_t)(-1) )
           input_pos = 0;
 	else{
           #ifdef LOCAL_ECHO
           //We'll just echo for now and see what happens
-          writeSize = sdAsynchronousWrite( &SD3, read_buffer, COMMAND_SIZE );
+          sdAsynchronousWrite( &SD3, read_buffer, COMMAND_SIZE );
           #endif
         }
       }else if( events & SD_OVERRUN_ERROR ){
@@ -186,7 +184,7 @@ msg_t UART_Thread(void* arg){
       }else{
 	#ifdef LOCAL_ECHO
         //We'll just echo for now and see what happens
-        writeSize = sdAsynchronousWrite( &SD3, read_buffer, COMMAND_SIZE );
+        sdAsynchronousWrite( &SD3, read_buffer, COMMAND_SIZE );
 	#endif
 	/*
          *Parse the commands... 
@@ -227,10 +225,22 @@ msg_t UART_Thread(void* arg){
               chprintf((BaseChannel*)&SD3,"\r\nDestination: ");
               sdWrite(&SD3,input_buffer,6);
               chprintf((BaseChannel*)&SD3,"\r\nData: ");
-              sdWrite(&SD3,input_buffer+7,2);
-              //TODO: Parse ASCII address, let the ASCII bytes be the actual data
-              //
-              //TODO: Send to SPI Flash
+              sdWrite(&SD3,input_buffer+7,1);
+              //Convert the ASCII destination address to a 32bit value
+              uint8_t dest;
+              uint32_t dest32;
+              uint8_t i;
+              for( i = 0; i < 6; i++ ){
+                if( (char)input_buffer[i] >= 'a' )
+		  dest = input_buffer[i] - (uint8_t)'a' + 0x10;
+                else if( (char)input_buffer[i] >= 'A' )
+                  dest = input_buffer[i] - (uint8_t)'A' + 0x10;
+                else
+                  dest = input_buffer[i] - (uint8_t)'0';
+                dest32 |= dest<<(4*(5-i));
+              }
+              //Write to SPI
+              flashWriteByte( dest32, *(input_buffer+7) );
               myUART_state = UART_COMM_IDLE;
               showMenu();
               input_pos = 0;
@@ -246,10 +256,26 @@ msg_t UART_Thread(void* arg){
            if( input_buffer[input_pos] == (uint8_t)'\r' ){
               chprintf((BaseChannel*)&SD3,"\r\nTarget: ");
               sdWrite(&SD3,input_buffer,6);
+              //Convert the ASCII destination address to a 32bit value
+              uint8_t dest;
+              uint32_t dest32 = 0x0;
+              uint8_t i;
+              for( i = 0; i < 6; i++ ){
+                if( (char)input_buffer[i] >= 'a' )
+		  dest = input_buffer[i] - (uint8_t)'a' + 0x10;
+                else if( (char)input_buffer[i] >= 'A' )
+                  dest = input_buffer[i] - (uint8_t)'A' + 0x10;
+                else
+                  dest = input_buffer[i] - (uint8_t)'0';
+                dest32 |= dest<<(4*(5-i));
+              }
+              //Write to SPI
+              dest = flashReadByte( dest32 );
               //TODO: Parse ASCII address, let the ASCII bytes be the actual data
               //
               //TODO: Get from SPI Flash
               chprintf((BaseChannel*)&SD3,"\r\nData: ");
+              sdWrite(&SD3,&dest,1);
               myUART_state = UART_COMM_IDLE;
               showMenu();
               input_pos = 0;
