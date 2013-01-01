@@ -24,7 +24,6 @@
 #include "ch.h"
 #include "hal.h"
 #include "chprintf.h"
-#include "spi_flash.h"
 
 #ifdef RELEASE_VERSION
 
