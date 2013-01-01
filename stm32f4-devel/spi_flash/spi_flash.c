@@ -26,6 +26,18 @@ void configureSPI_Flash(void){
                            PAL_STM32_OSPEED_HIGHEST );
 }
 
+static uint8_t checkBusy(void){
+  uint8_t  flash_status = 0;
+  //Send NSS Low
+  spiSelect( &SPID1 );
+  //Set the read status register command
+  flash_cmd = FLASH_READ_STATUS;
+  spiSend( &SPID1, 1, &flash_cmd );
+  //Get the status
+  spiReceive( &SPID1, 1, &flash_status );
+  return (FLASH_STATUS_BUSY & flash_status); //Check for write complete
+  spiUnselect( &SPID1 );
+}
 
 void flashWriteByte( uint32_t addr, uint8_t data ){
   //Ensure that we get a legitimate address
@@ -34,10 +46,12 @@ void flashWriteByte( uint32_t addr, uint8_t data ){
   flash_addr[0] = (addr & 0xFF0000)>>16; //MSB
   flash_addr[1] = (addr & 0x00FF00)>>8;
   flash_addr[2] = (addr & 0x0000FF);     //LSB
-  //Set the command
-  flash_cmd = FLASH_WRITE_ENABLE;
   //Acquire the SPI device
   spiAcquireBus( &SPID1 );
+  //Wait until there is no write in progress
+  while( checkBusy() );
+  //Set the command
+  flash_cmd = FLASH_WRITE_ENABLE;
   //Prepare for data transfer
   spiSelect( &SPID1 );
   //Transmit the write enable command
@@ -63,7 +77,6 @@ void flashWriteByte( uint32_t addr, uint8_t data ){
 void flashWriteBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   const uint8_t zero_fill = 0x00;
   uint32_t tx_bytes = 2;
-  uint8_t  flash_status = 0;
   //Ensure that we get a legitimate address
   addr &= FLASH_HIGH_ADDR-1;
   //Prevent overflow
@@ -73,10 +86,12 @@ void flashWriteBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   flash_addr[0] = (addr & 0xFF0000)>>16; //MSB
   flash_addr[1] = (addr & 0x00FF00)>>8;
   flash_addr[2] = (addr & 0x0000FF);     //LSB
-  //Software EndOfWrite Detection
-  flash_cmd = FLASH_DBSY;
   //Acquire the SPI device
   spiAcquireBus( &SPID1 );
+  //Wait until there is no write in progress
+  while( checkBusy() );
+  //Software EndOfWrite Detection
+  flash_cmd = FLASH_DBSY;
   //Prepare for data transfer
   spiSelect( &SPID1 );
   //Transmit software EOW Detection
@@ -97,14 +112,8 @@ void flashWriteBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   spiUnselect( &SPID1 );
   //Loop through the rest of data
   while( tx_bytes < n ){
-    //Send NSS Low
-    spiSelect( &SPID1 );
-    //Set the read status register command
-    flash_cmd = FLASH_READ_STATUS;
-    spiSend( &SPID1, 1, &flash_cmd );
-    //Get the status
-    spiReceive( &SPID1, 1, &flash_status );
-    if( ~(FLASH_STATUS_BUSF & flash_status) ){  //Check for write complete
+    if( !checkBusy() ){  //Check for write complete
+      spiSelect( &SPID1 )
       //Set the AAI command
       flash_cmd = FLASH_AAI_PROGRAM;
       //Transmit the AAI command
@@ -132,5 +141,69 @@ void flashWriteBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   spiUnselect( &SPID1 );
   //Release the bus
   spiReleaseBus( &SPID1 );
+  return;
+}
+
+uint8_t flashReadByte( uint32_t addr ){
+  //For this function, we'll use the high-speed read functionality
+  uint8_t returnByte;
+  uint8_t zero = 0x00;
+  //Ensure that we get a legitimate address
+  addr &= FLASH_HIGH_ADDR-1;
+  //Map addr into 8-bit words to send
+  flash_addr[0] = (addr & 0xFF0000)>>16; //MSB
+  flash_addr[1] = (addr & 0x00FF00)>>8;
+  flash_addr[2] = (addr & 0x0000FF);     //LSB
+  //Grab the SPI device
+  spiAcquireBus( &SPID1 );
+  //Ensure there is no write in progress
+  while( checkBusy() ); 
+  //Set high speed read cmd
+  flash_cmd = FLASH_HS_READ;
+  //Send cmd
+  spiSelect( &SPID1 )
+  spiSend( &SPID1, 1, &flash_cmd );
+  //Send address
+  spiSend( &SPID1, 3, flash_addr );
+  //Don't care byte
+  spySend( &SPID1, 1, &zero );
+  //Read byte
+  spiRead( &SPID1, 1, &returnByte );
+  //Release the device
+  spiUnselect( &SPID1 );
+  spiReleaseBus( &SPID1 );
+
+  return returnByte;
+}
+
+void flashReadBytes( uint32_t addr, uint8_t* data, uint32_t n ){
+  //For this function, we'll use the high-speed read functionality
+  uint8_t returnByte;
+  uint8_t zero = 0x00;
+  //Ensure that we get a legitimate address
+  addr &= FLASH_HIGH_ADDR-1;
+  //Map addr into 8-bit words to send
+  flash_addr[0] = (addr & 0xFF0000)>>16; //MSB
+  flash_addr[1] = (addr & 0x00FF00)>>8;
+  flash_addr[2] = (addr & 0x0000FF);     //LSB
+  //Grab the SPI device
+  spiAcquireBus( &SPID1 );
+  //Ensure there is no write in progress
+  while( checkBusy() ); 
+  //Set high speed read cmd
+  flash_cmd = FLASH_HS_READ;
+  //Send cmd
+  spiSelect( &SPID1 )
+  spiSend( &SPID1, 1, &flash_cmd );
+  //Send address
+  spiSend( &SPID1, 3, flash_addr );
+  //Don't care byte
+  spySend( &SPID1, 1, &zero );
+  //Read bytes
+  spiRead( &SPID1, n, data );
+  //Release the device
+  spiUnselect( &SPID1 );
+  spiReleaseBus( &SPID1 );
+
   return;
 }
