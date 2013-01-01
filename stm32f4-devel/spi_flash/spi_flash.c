@@ -108,7 +108,7 @@ void flashWriteBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   const uint8_t zero_fill = 0x00;
   uint32_t tx_bytes = 2;
   //Prevent overflow
-  if( n > (FLASH_HIGH_ADDR - addr) )
+  if( n > (FLASH_HIGH_ADDR - addr) || n < 2)
     return;
   //Map addr into 8-bit words to send
   flash_addr[0] = (addr & 0x00FF0000)>>16; //MSB
@@ -118,6 +118,7 @@ void flashWriteBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   spiAcquireBus( &SPID2 );
   //Wait until there is no write in progress
   while( checkBusy() );
+  //NSS Low
   spiSelect( &SPID2 );
   //Set the WEN command
   flash_cmd = FLASH_WRITE_ENABLE;
