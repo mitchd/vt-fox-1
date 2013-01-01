@@ -12,6 +12,9 @@ static const uint8_t RESP_RX_ERR = (uint8_t)'E';
 #define INPUT_BUFFER_SIZE 128
 static uint8_t input_buffer[INPUT_BUFFER_SIZE]; //Input buffer
 static void showMenu(void){
+  uint8_t i = 0;
+  for( ; i < INPUT_BUFFER_SIZE; i++ )
+    input_buffer[i] = 0x00;
   chprintf((BaseChannel*)&SD3, "\r\nDevelopment Menu\r\n");
   chprintf((BaseChannel*)&SD3, "(1) Write Byte to SPI Flash\r\n");
   chprintf((BaseChannel*)&SD3, "(2) Read Byte from SPI Flash\r\n");
@@ -28,7 +31,7 @@ static void showReadBytePrompt(void){
   chprintf((BaseChannel*)&SD3, " :>");
 }
 static void showWriteBytesPrompt(void){
-  chprintf((BaseChannel*)&SD3, "\r\nStartng at 0x000000, enter number of bytes:\r\n");
+  chprintf((BaseChannel*)&SD3, "\r\nStartng at 0x000000, enter number of bytes (max %d):\r\n",INPUT_BUFFER_SIZE);
   chprintf((BaseChannel*)&SD3, " :>");
 }
 static void showReadBytesPrompt(void){
@@ -172,7 +175,6 @@ msg_t UART_Thread(void* arg){
           input_pos = 0;
 	else{
           #ifdef LOCAL_ECHO
-          //We'll just echo for now and see what happens
           sdAsynchronousWrite( &SD3, read_buffer, COMMAND_SIZE );
           #endif
         }
@@ -183,7 +185,6 @@ msg_t UART_Thread(void* arg){
         chEvtClearFlags( SD_OVERRUN_ERROR );
       }else{
 	#ifdef LOCAL_ECHO
-        //We'll just echo for now and see what happens
         sdAsynchronousWrite( &SD3, read_buffer, COMMAND_SIZE );
 	#endif
 	/*
@@ -228,7 +229,7 @@ msg_t UART_Thread(void* arg){
               sdWrite(&SD3,input_buffer+7,1);
               //Convert the ASCII destination address to a 32bit value
               uint32_t dest;
-              uint32_t dest32;
+              uint32_t dest32 = 0;
               uint8_t i;
               for( i = 0; i < 6; i++ ){
                 if( (char)input_buffer[i] >= 'a' )
@@ -271,9 +272,6 @@ msg_t UART_Thread(void* arg){
               }
               //Write to SPI
               uint8_t read = flashReadByte( dest32 );
-              //TODO: Parse ASCII address, let the ASCII bytes be the actual data
-              //
-              //TODO: Get from SPI Flash
               chprintf((BaseChannel*)&SD3,"\r\nData: ");
               sdWrite(&SD3,&read,1);
               myUART_state = UART_COMM_IDLE;
@@ -286,6 +284,40 @@ msg_t UART_Thread(void* arg){
              }else
                input_pos++;
            }
+         }else if( myUART_state == UART_RX_RGB ){
+           input_buffer[input_pos] = read_buffer[0];
+           if( input_buffer[input_pos] == (uint8_t)'\r' ){
+              uint32_t bytes = 0;
+              uint32_t mult = 1;
+              uint8_t i;
+              for( i = 0; i < input_pos-1; i++ ){
+                mult *= 10;
+              }
+              for( i = 0; i < input_pos; i++ ){
+                bytes += (input_buffer[i] - (uint8_t)'0') * mult;
+                mult /= 10;
+              }
+              chprintf((BaseChannel*)&SD3,"\r\nNum Bytes: %d", bytes);
+              chprintf((BaseChannel*)&SD3,"\r\nErasing Flash\r\n");
+              flashErase( 0x00000000, FLASH_CHIP_ERASE, TRUE );
+              chprintf((BaseChannel*)&SD3,"\r\nErasing Done, Transfer %d bytes\r\n", bytes);
+              for( i = 0; i < bytes; i++ ){
+                sdRead( &SD3, (input_buffer+i), 1 );
+                #ifdef LOCAL_ECHO
+                sdAsynchronousWrite( &SD3, (input_buffer+i), COMMAND_SIZE );
+                #endif
+              }
+              flashWriteBytes( 0x00, input_buffer, bytes );
+              myUART_state = UART_COMM_IDLE;
+              showMenu();
+           }else{
+             if(input_pos == INPUT_BUFFER_SIZE-1){
+               input_pos = 0;
+               //buffer flush?
+             }else
+               input_pos++;
+           }
+         
          }
        }
     }

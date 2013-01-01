@@ -32,7 +32,6 @@
 
 #else
 
-#include "strings.h"
 #define UART_SHOWMENU 3
 #define UART_RX_RGB 4
 #define UART_TX_RGB 5
