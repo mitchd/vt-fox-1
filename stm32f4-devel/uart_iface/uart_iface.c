@@ -227,7 +227,7 @@ msg_t UART_Thread(void* arg){
               chprintf((BaseChannel*)&SD3,"\r\nData: ");
               sdWrite(&SD3,input_buffer+7,1);
               //Convert the ASCII destination address to a 32bit value
-              uint8_t dest;
+              uint32_t dest;
               uint32_t dest32;
               uint8_t i;
               for( i = 0; i < 6; i++ ){
@@ -257,7 +257,7 @@ msg_t UART_Thread(void* arg){
               chprintf((BaseChannel*)&SD3,"\r\nTarget: ");
               sdWrite(&SD3,input_buffer,6);
               //Convert the ASCII destination address to a 32bit value
-              uint8_t dest;
+              uint32_t dest;
               uint32_t dest32 = 0x0;
               uint8_t i;
               for( i = 0; i < 6; i++ ){
@@ -270,12 +270,12 @@ msg_t UART_Thread(void* arg){
                 dest32 |= dest<<(4*(5-i));
               }
               //Write to SPI
-              dest = flashReadByte( dest32 );
+              uint8_t read = flashReadByte( dest32 );
               //TODO: Parse ASCII address, let the ASCII bytes be the actual data
               //
               //TODO: Get from SPI Flash
               chprintf((BaseChannel*)&SD3,"\r\nData: ");
-              sdWrite(&SD3,&dest,1);
+              sdWrite(&SD3,&read,1);
               myUART_state = UART_COMM_IDLE;
               showMenu();
               input_pos = 0;
