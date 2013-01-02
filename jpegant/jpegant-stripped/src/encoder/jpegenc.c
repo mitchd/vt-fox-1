@@ -356,7 +356,7 @@ static void write_SOF0info(const short height, const short width)
 	writeword(width);	//width
 	writebyte(3);		//nrofcomponents
 	writebyte(1);		//IdY
-	writebyte(0x22);	//HVY, 4:2:0 subsampling
+	writebyte(0x11);	//HVY, 4:4:4 subsampling (0x22 for 4:2:0)
 	writebyte(0);		//QTY
 	writebyte(2);		//IdCb
 	writebyte(0x11);	//HVCb
