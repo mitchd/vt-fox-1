@@ -299,7 +299,7 @@ msg_t UART_Thread(void* arg){
               }
               chprintf((BaseChannel*)&SD3,"\r\nNum Bytes: %d", bytes);
               chprintf((BaseChannel*)&SD3,"\r\nErasing Flash\r\n");
-              flashErase( 0x00000000, FLASH_CHIP_ERASE, TRUE );
+              flashErase( 0x00000000, FLASH_4KB_ERASE, TRUE );
               chprintf((BaseChannel*)&SD3,"\r\nErasing Done, Transfer %d bytes\r\n", bytes);
               for( i = 0; i < bytes; i++ ){
                 sdRead( &SD3, (input_buffer+i), 1 );

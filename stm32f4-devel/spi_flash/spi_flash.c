@@ -20,6 +20,7 @@ static uint8_t checkBusy(void){
   //Get the status
   spiReceive( &SPID2, 1, &flash_status );
   spiUnselect( &SPID2 );
+  chprintf((BaseChannel*)&SD3,"\r\nStatus Reg: %d\r\n", flash_status );
   return (FLASH_STATUS_BUSY & flash_status); //Check for write complete
 }
 
@@ -45,6 +46,7 @@ void configureSPIFlash(void){
   palSetPadMode( GPIOB, 15, PAL_MODE_ALTERNATE(5) |
                            PAL_STM32_OSPEED_HIGHEST );
 
+  chprintf((BaseChannel*)&SD3,"\r\nConfiguring Flash Device \r\n");
   //Disable write protection
   uint8_t spi_cmd = FLASH_ENABLE_WRITE_STATUS;
   spiAcquireBus( &SPID2 );
@@ -93,9 +95,6 @@ void flashWriteByte( uint32_t addr, uint8_t data ){
   spiSend( &SPID2, 3, flash_addr );
   //Transmit the byte
   spiSend( &SPID2, 1, &data );
-  //Transmit the write disable command
-  flash_cmd = FLASH_WRITE_DISABLE;
-  spiSend( &SPID2, 1, &flash_cmd );
   //End the transfer
   spiUnselect( &SPID2 );
   //Release the bus
@@ -125,14 +124,9 @@ void flashWriteBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   //Transmit the write enable command
   spiSend( &SPID2, 1, &flash_cmd );
   spiUnselect( &SPID2 );
-  //Software EndOfWrite Detection
-  flash_cmd = FLASH_DBSY;
-  //Prepare for data transfer
-  spiSelect( &SPID2 );
-  //Transmit software EOW Detection
-  spiSend( &SPID2, 1, &flash_cmd );
   //AAI Command
   flash_cmd = FLASH_AAI_PROGRAM;
+  spiSelect( &SPID2 );
   //Transmit the AAI command
   spiSend( &SPID2, 1, &flash_cmd );
   //Transmit the destination address
