@@ -28,7 +28,6 @@
 #include "ch.h"
 #include "hal.h"
 #include "stm32f4xx.h"
-#include "chprintf.h"
 #define __SPI_FLASH__
 
 //Opcodes for Microchip SST Flash

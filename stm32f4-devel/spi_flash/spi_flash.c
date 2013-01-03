@@ -1,7 +1,5 @@
 #include "spi_flash.h"
 
-static uint8_t flash_addr[3];
-static uint8_t flash_cmd;
 
 static const SPIConfig spi2cfg = {
   NULL,         //Callback function
@@ -10,18 +8,20 @@ static const SPIConfig spi2cfg = {
   0 		//Configuration Register stuff (set bits here to go slow)
 };
 
-static uint8_t checkBusy(void){
+static void  checkBusy(void){
+  uint8_t flash_cmd;
   uint8_t  flash_status = 0;
   //Send NSS Low
   spiSelect( &SPID2 );
   //Set the read status register command
   flash_cmd = FLASH_READ_STATUS;
   spiSend( &SPID2, 1, &flash_cmd );
-  //Get the status
-  spiReceive( &SPID2, 1, &flash_status );
+  do{
+    //Get the status
+    spiReceive( &SPID2, 1, &flash_status );
+  }while(FLASH_STATUS_BUSY & flash_status );
   spiUnselect( &SPID2 );
-  chprintf((BaseChannel*)&SD3,"\r\nStatus Reg: %d\r\n", flash_status );
-  return (FLASH_STATUS_BUSY & flash_status); //Check for write complete
+  return; //Check for write complete
 }
 
 void configureSPIFlash(void){
@@ -46,7 +46,6 @@ void configureSPIFlash(void){
   palSetPadMode( GPIOB, 15, PAL_MODE_ALTERNATE(5) |
                            PAL_STM32_OSPEED_HIGHEST );
 
-  chprintf((BaseChannel*)&SD3,"\r\nConfiguring Flash Device \r\n");
   //Disable write protection
   uint8_t spi_cmd = FLASH_ENABLE_WRITE_STATUS;
   spiAcquireBus( &SPID2 );
@@ -62,14 +61,18 @@ void configureSPIFlash(void){
   spi_cmd = 0x00;
   spiSend( &SPID2, 1, &spi_cmd );
   //Transmit the write disable command
-  flash_cmd = FLASH_WRITE_DISABLE;
-  spiSend( &SPID2, 1, &flash_cmd );
+  spi_cmd = FLASH_WRITE_DISABLE;
+  spiSend( &SPID2, 1, &spi_cmd );
   spiUnselect( &SPID2 );
+  //Wait until the device is ready before releasing to the program
+  checkBusy();
   spiReleaseBus( &SPID2 );
 }
 
 
 void flashWriteByte( uint32_t addr, uint8_t data ){
+  uint8_t flash_addr[3];
+  uint8_t flash_cmd;
   //Map addr into 8-bit words to send
   flash_addr[0] = (addr & 0x00FF0000)>>16; //MSB
   flash_addr[1] = (addr & 0x0000FF00)>>8;
@@ -77,10 +80,10 @@ void flashWriteByte( uint32_t addr, uint8_t data ){
   //Acquire the SPI device
   spiAcquireBus( &SPID2 );
   //Wait until there is no write in progress
-  while( checkBusy() );
+  checkBusy();
   //Set the command
   flash_cmd = FLASH_WRITE_ENABLE;
-  //Prepare for data transfer
+  //NSS Low
   spiSelect( &SPID2 );
   //Transmit the write enable command
   spiSend( &SPID2, 1, &flash_cmd );
@@ -95,7 +98,7 @@ void flashWriteByte( uint32_t addr, uint8_t data ){
   spiSend( &SPID2, 3, flash_addr );
   //Transmit the byte
   spiSend( &SPID2, 1, &data );
-  //End the transfer
+  //NSS High
   spiUnselect( &SPID2 );
   //Release the bus
   spiReleaseBus( &SPID2 );
@@ -104,6 +107,8 @@ void flashWriteByte( uint32_t addr, uint8_t data ){
 }
 
 void flashWriteBytes( uint32_t addr, uint8_t* data, uint32_t n ){
+  uint8_t flash_addr[3];
+  uint8_t flash_cmd;
   const uint8_t zero_fill = 0x00;
   uint32_t tx_bytes = 2;
   //Prevent overflow
@@ -116,7 +121,7 @@ void flashWriteBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   //Acquire the SPI device
   spiAcquireBus( &SPID2 );
   //Wait until there is no write in progress
-  while( checkBusy() );
+  checkBusy();
   //NSS Low
   spiSelect( &SPID2 );
   //Set the WEN command
@@ -137,26 +142,25 @@ void flashWriteBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   spiUnselect( &SPID2 );
   //Loop through the rest of data
   while( tx_bytes < n ){
-    if( !checkBusy() ){  //Check for write complete
-      spiSelect( &SPID2 );
-      //Set the AAI command
-      flash_cmd = FLASH_AAI_PROGRAM;
-      //Transmit the AAI command
-      spiSend( &SPID2, 1, &flash_cmd );
-      if( tx_bytes+1 == n ){ //Check to see if we need a fill
-        //Transmit the last byte
-        spiSend( &SPID2, 1, data+tx_bytes );
-        //Transmit the fill
-        spiSend( &SPID2, 1, &zero_fill );
-        tx_bytes++;
-      }else{
-        spiSend( &SPID2, 2, data+tx_bytes );
-        tx_bytes += 2;
-      }
+    checkBusy();
+    //Transmit the AAI command
+    flash_cmd = FLASH_AAI_PROGRAM;
+    spiSelect( &SPID2 );
+    spiSend( &SPID2, 1, &flash_cmd );
+    if( tx_bytes+1 == n ){ //Check to see if we need a fill
+      //Transmit the last byte
+      spiSend( &SPID2, 1, data+tx_bytes );
+      //Transmit the fill
+      spiSend( &SPID2, 1, &zero_fill );
+      tx_bytes++;
+    }else{
+      spiSend( &SPID2, 2, data+tx_bytes );
+      tx_bytes += 2;
     }
     //Send NSS High
     spiUnselect( &SPID2 );
   }
+  checkBusy();
   //Send NSS Low
   spiSelect( &SPID2 );
   //Set write disable
@@ -170,6 +174,8 @@ void flashWriteBytes( uint32_t addr, uint8_t* data, uint32_t n ){
 }
 
 uint8_t flashReadByte( uint32_t addr ){
+  uint8_t flash_addr[3];
+  uint8_t flash_cmd;
   //For this function, we'll use the high-speed read functionality
   uint8_t returnByte;
   uint8_t zero = 0x00;
@@ -180,7 +186,7 @@ uint8_t flashReadByte( uint32_t addr ){
   //Grab the SPI device
   spiAcquireBus( &SPID2 );
   //Ensure there is no write in progress
-  while( checkBusy() ); 
+  checkBusy(); 
   flash_cmd = FLASH_HS_READ;
   //Send cmd
   spiSelect( &SPID2 );
@@ -199,6 +205,8 @@ uint8_t flashReadByte( uint32_t addr ){
 }
 
 void flashReadBytes( uint32_t addr, uint8_t* data, uint32_t n ){
+  uint8_t flash_addr[3];
+  uint8_t flash_cmd;
   //For this function, we'll use the high-speed read functionality
   const uint8_t zero = 0x00;
   //Map addr into 8-bit words to send
@@ -208,7 +216,7 @@ void flashReadBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   //Grab the SPI device
   spiAcquireBus( &SPID2 );
   //Ensure there is no write in progress
-  while( checkBusy() ); 
+  checkBusy(); 
   //Set high speed read cmd
   flash_cmd = FLASH_HS_READ;
   //Send cmd
@@ -228,6 +236,8 @@ void flashReadBytes( uint32_t addr, uint8_t* data, uint32_t n ){
 }
 
 void flashErase( uint32_t addr, uint8_t erase_cmd, uint8_t wait ){
+  uint8_t flash_addr[3];
+  uint8_t flash_cmd;
   //The flash module (according to the datasheet), does its own AND operation
   //with the appropriate MSBs to determine the sector to erase, so we don't
   //have to
@@ -238,7 +248,7 @@ void flashErase( uint32_t addr, uint8_t erase_cmd, uint8_t wait ){
   //Acquire the device
   spiAcquireBus( &SPID2 );
   //Ensure there is no write in progress
-  while( checkBusy() );
+  checkBusy();
   //Set the WREN command
   spiSelect( &SPID2 );
   flash_cmd = FLASH_WRITE_ENABLE;
@@ -257,7 +267,7 @@ void flashErase( uint32_t addr, uint8_t erase_cmd, uint8_t wait ){
   //NSS High to execute
   spiUnselect( &SPID2 );
   if( wait == TRUE )
-    while( checkBusy() );
+    checkBusy();
   //Release the device
   spiReleaseBus( &SPID2 );
 
