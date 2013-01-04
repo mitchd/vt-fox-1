@@ -147,4 +147,21 @@
 #define CAM_STATCTR	0xC9 //Saturation Control
 
 
+
+//Setup the I2C Camera SCCB
+void	setupI2C(void)
+
+//Camera configuration
+void	configureCam(void);
+
+//Camera utility functions
+void	wakeupCam(void);
+void	powerdownCam(void);
+
+//Put n bytes from the FIFO into buf
+void	fifoGrabBytes( uint8_t *buf, uint32_t n );
+
+//Camera control thread -- Needs just a little bit of memory
+extern WORKING_AREA(waCamera_Thread, 10240);
+void	cameraControlThread(void* arg);
 #endif
