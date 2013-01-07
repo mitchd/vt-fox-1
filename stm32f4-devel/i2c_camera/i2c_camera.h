@@ -1,5 +1,9 @@
 #ifndef _I2C_CAMERA_
 
+#include "unistd.h"
+#include "ch.h"
+#include "hal.h"
+
 #define _I2C_CAMERA_
 
 #define CAM_I2C_ADDR	0x42
@@ -146,13 +150,38 @@
 #define CAM_AD-CHGr	0xC1 //Gr channel black level compensation
 #define CAM_STATCTR	0xC9 //Saturation Control
 
+#define CAM_PORT	GPIOA//Main camera control port
+#define CAM_RESET	1    //~RESET to camera (sets all registers to default)
+#define CAM_PWDN	2    //Power down camera on high
+#define CAM_XCLK	8    //Clock input to camera
+
+#define CAM_PORT2	GPIOF//2nd camera control port
+#define CAM_VSYNC	8    //VSYNC output from camera
+#define CAM_HREF	9    //HREF output from camera
+
+#define FIFO_DATA_PORT	GPIOF//Data port for the FIFO input
+#define FIFO_D0		0    //Data bits 0-7
+#define FIFO_D1		1
+#define FIFO_D2		2
+#define FIFO_D3		3
+#define FIFO_D4		4
+#define FIFO_D5		5
+#define FIFO_D6		6
+#define FIFO_D7		7
+
+#define FIFO_CTL_PORT	GPIOC//FIFO Control Port
+#define FIFO_WEN	0    //Write Enable to FIFO
+#define FIFO_RRST	1    //Read pointer reset
+#define FIFO_OE		2    //Read output enable
+#define FIFO_RCLK	3    //Read clock
 
 
 //Setup the I2C Camera SCCB
-void	setupI2C(void)
+void	setupI2C(void);
+void    setupCamPort(void);
 
 //Camera configuration
-void	configureCam(void);
+uint8_t	configureCam(void);
 
 //Camera utility functions
 void	wakeupCam(void);
@@ -162,6 +191,6 @@ void	powerdownCam(void);
 void	fifoGrabBytes( uint8_t *buf, uint32_t n );
 
 //Camera control thread -- Needs just a little bit of memory
-extern WORKING_AREA(waCamera_Thread, 10240);
+extern  WORKING_AREA(waCamera_Thread, 10240);
 void	cameraControlThread(void* arg);
 #endif

@@ -50,7 +50,7 @@ static msg_t Thread1(void *arg) {
 }
 
 WORKING_AREA(waUART_Thread, 512);
-
+WORKING_AREA(waCamera_Thread, 10240);
 
 /*
  * Application entry point.

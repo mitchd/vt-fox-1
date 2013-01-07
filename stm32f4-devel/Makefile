@@ -73,7 +73,7 @@ include $(CHIBIOS)/os/kernel/kernel.mk
 include $(CHIBIOS)/uart_iface/uart_iface.mk
 include $(CHIBIOS)/spi_flash/spi_flash.mk
 include $(CHIBIOS)/encoder/encoder.mk
-#include $(CHIBIOS)/i2c_camera/i2c_camera.mk
+include $(CHIBIOS)/i2c_camera/i2c_camera.mk
 # Define linker script file here
 LDSCRIPT= $(PORTLD)/STM32F407xG.ld
 #LDSCRIPT= $(PORTLD)/STM32F407xG_CCM.ld

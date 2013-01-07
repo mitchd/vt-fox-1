@@ -1,7 +1,7 @@
 #include "jpegenc.h"
 #include <unistd.h>
 
-#define QTAB_SCALE	10
+#define QTAB_SCALE 10	
 
 // as you can see I use Paint tables
 static const unsigned char qtable_0_lum[8][8] =
