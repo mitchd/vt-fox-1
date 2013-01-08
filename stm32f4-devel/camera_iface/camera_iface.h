@@ -79,7 +79,7 @@
 #define CAM_MTX6	0x54 //Matrix Coefficient 6
 #define CAM_BRIGHT	0x55 //Brightness Control
 #define CAM_CONTRAS	0x56 //Contrast Control
-#define CAM_CONSTRAS-CENTER	0x57 //Contrast Center
+#define CAM_CONSTRAS_CENTER	0x57 //Contrast Center
 #define CAM_MTXS	0x58 //Matrix Coefficient Sign
 #define CAM_LCC1	0x62 //Lens Correction Option 1 - X coordinate
 #define CAM_LCC2	0x63 //Lens Correction Option 2 - Y coordinate
@@ -137,17 +137,17 @@
 #define CAM_HAECC6	0xA9 //Histogram-based AEC/AGC Control 6
 #define CAM_HAECC7	0xAA //AEC Algorithm Select
 #define CAM_BD60MAX	0xAB //60Hz Banding Step Limit
-#define CAM_STR-OPT	0xAC //Strobe options
+#define CAM_STR_OPT	0xAC //Strobe options
 #define CAM_STR_R	0xAD //R Gain for LED
 #define CAM_STR_G	0xAE //G Gain for LED
 #define CAM_STR_B	0xAF //B Gain for LED
 #define CAM_ABLC1	0xB1 //ABLC Enable
 #define CAM_THL_ST	0xB3 //ABLC Target
 #define CAM_THL_DT	0xB5 //ABLC Stable Range
-#define CAM_AD-CHB	0xBE //Blue Channel Black level compensation
-#define CAM_AD-CHR	0xBF //Red channel black level compensation
-#define CAM_AD-CHGb	0xC0 //Gb channel black level compensation
-#define CAM_AD-CHGr	0xC1 //Gr channel black level compensation
+#define CAM_AD_CHB	0xBE //Blue Channel Black level compensation
+#define CAM_AD_CHR	0xBF //Red channel black level compensation
+#define CAM_AD_CHGb	0xC0 //Gb channel black level compensation
+#define CAM_AD_CHGr	0xC1 //Gr channel black level compensation
 #define CAM_STATCTR	0xC9 //Saturation Control
 
 #define CAM_PORT	GPIOA//Main camera control port
@@ -156,8 +156,8 @@
 #define CAM_XCLK	8    //Clock input to camera
 
 #define CAM_PORT2	GPIOF//2nd camera control port
-#define CAM_VSYNC	8    //VSYNC output from camera
-#define CAM_HREF	9    //HREF output from camera
+#define CAM_VSYNC_OUT	8    //VSYNC output from camera
+#define CAM_HREF_OUT	9    //HREF output from camera
 
 #define FIFO_DATA_PORT	GPIOF//Data port for the FIFO input
 #define FIFO_D0		0    //Data bits 0-7
@@ -218,7 +218,7 @@ void    setupCamPort(void);
  *   0x73 0xF0
  *   0xA2 0x02
  */
-uint8_t	configureCam(void);
+msg_t	configureCam(void);
 
 //Camera utility functions
 /*

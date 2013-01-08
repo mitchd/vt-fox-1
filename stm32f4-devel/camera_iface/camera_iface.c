@@ -2,7 +2,7 @@
 
 
 //I2C#1 Configuration stuff
-static const I2CConfig i2cfg1{
+static const I2CConfig i2cfg1 = {
   OPMODE_I2C,
   400000,
   FAST_DUTY_CYCLE_2,
@@ -14,16 +14,18 @@ void setupI2C(void){
 
   i2cStart(&I2CD1, &i2cfg1);
 
-  palSetMode(GPIOB, 8, PAL_MODE_ALTERNATE(4));
-  palSetMode(GPIOB, 9, PAL_MODE_ALTERNATE(4));
+  palSetMode(GPIOB, 8, PAL_MODE_ALTERNATE(4) |
+                       PAL_MODE_OUTPUT_OPENDRAIN );
+  palSetMode(GPIOB, 9, PAL_MODE_ALTERNATE(4) |
+                       PAL_MODE_OUTPUT_OPENDRAIN );
 }
 
 //Configure the camera pads
 void setupCamPort(void){
   palSetMode(CAM_PORT, CAM_RESET, PAL_MODE_OUTPUT_PUSHPULL);
   palSetMode(CAM_PORT, CAM_PWDN, PAL_MODE_OUTPUT_PUSHPULL);
-  palSetMode(CAM_PORT2, CAM_VSYNC, PAL_MODE_INPUT);
-  palSetMode(CAM_PORT2, CAM_HREF, PAL_MODE_INPUT);
+  palSetMode(CAM_PORT2, CAM_VSYNC_OUT, PAL_MODE_INPUT);
+  palSetMode(CAM_PORT2, CAM_HREF_OUT, PAL_MODE_INPUT);
   palSetMode(FIFO_DATA_PORT, FIFO_D0, PAL_MODE_INPUT);
   palSetMode(FIFO_DATA_PORT, FIFO_D1, PAL_MODE_INPUT);
   palSetMode(FIFO_DATA_PORT, FIFO_D2, PAL_MODE_INPUT);
@@ -59,9 +61,9 @@ msg_t configureCam(void){
   tx_buf[11] = 0x35;
   tx_buf[12] = CAM_SCALING_DCWCTR;
   tx_buf[13] = 0x11;
-  tx_buf[14] = CAM_SCALING_PCLK_DIV;
+  tx_buf[14] = CAM_SCALING_PCK_DIV;
   tx_buf[15] = 0xF0;
-  tx_buf[16] = CAM_SCALING_PCLK_DELAY;
+  tx_buf[16] = CAM_SCALING_PCK_DELAY;
   tx_buf[17] = 0xA2;
 
   //Poweron the camera
@@ -87,5 +89,5 @@ void wakeupCam(){
 }
 
 void powerdownCam(){
-  palSetPad(CAMP_PORT, CAM_PWDN);
+  palSetPad(CAM_PORT, CAM_PWDN);
 }
