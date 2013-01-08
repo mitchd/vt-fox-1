@@ -1,4 +1,4 @@
-\beamer@endinputifotherversion {3.24pt}
+\beamer@endinputifotherversion {3.06pt}
 \beamer@sectionintoc {1}{Titlepage}{1}{0}{1}
 \beamer@sectionintoc {2}{Overview}{2}{0}{2}
 \beamer@sectionintoc {3}{Key Components}{3}{0}{3}
