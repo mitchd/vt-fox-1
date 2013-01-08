@@ -1,10 +1,10 @@
-#ifndef _I2C_CAMERA_
+#ifndef _CAMERA_IFACE_
 
 #include "unistd.h"
 #include "ch.h"
 #include "hal.h"
 
-#define _I2C_CAMERA_
+#define _CAMERA_IFACE_
 
 #define CAM_I2C_ADDR	0x42
 #define CAM_I2C_ADDRW	0x43

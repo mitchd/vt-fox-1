@@ -1,4 +1,4 @@
-#include "i2c_camera.h"
+#include "camera_iface.h"
 
 
 //I2C#1 Configuration stuff
