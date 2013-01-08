@@ -49,7 +49,7 @@ static msg_t Thread1(void *arg) {
   return 0;
 }
 
-WORKING_AREA(waUART_Thread, 128);
+WORKING_AREA(waUART_Thread, 512);
 
 
 /*

@@ -11,7 +11,7 @@ bool rgb_get_block(unsigned x, unsigned y, unsigned sx, unsigned sy,
                 unsigned offset = (y+r)*IMG_WIDTH + x;
                 for (unsigned c = 0; c < sx; c++) {
 	                unsigned i = offset + c;
-                        buf[sy*r + c] = addr[i];
+                        buf[sx*r + c] = addr[i];
                 }
         }
 

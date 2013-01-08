@@ -1,10 +1,10 @@
 #include "jpegenc.h"
-#include <unistd.h>
+#include "unistd.h"
 
 #define QTAB_SCALE	10
 
 // as you can see I use Paint tables
-static const unsigned char qtable_0_lum[8][8] =
+static const uint8_t qtable_0_lum[8][8] =
 {
 	{ 8,  6,  5,  8, 12, 20, 26, 31}, 
 	{ 6,  6,  7, 10, 13, 29, 30, 28},
@@ -16,7 +16,7 @@ static const unsigned char qtable_0_lum[8][8] =
 	{36, 46, 48, 49, 56, 50, 52, 50}
 };
 
-static const unsigned char qtable_0_chrom[8][8] =
+static const uint8_t qtable_0_chrom[8][8] =
 {
 	{ 9,  9, 12, 24, 50, 50, 50, 50},
 	{ 9, 11, 13, 33, 50, 50, 50, 50},
@@ -29,7 +29,7 @@ static const unsigned char qtable_0_chrom[8][8] =
 };
 
 // (1 << QTAB_SCALE)/qtable_0_lum[][]
-static const unsigned char qtable_lum[8][8] =
+static const uint8_t qtable_lum[8][8] =
 {
 	{128,171,205,128, 85, 51, 39, 33},
 	{171,171,146,102, 79, 35, 34, 37},
@@ -42,7 +42,7 @@ static const unsigned char qtable_lum[8][8] =
 };
 
 // (1 << QTAB_SCALE)/qtable_0_chrom[][]
-static const unsigned char qtable_chrom[8][8] =
+static const uint8_t qtable_chrom[8][8] =
 {
 	{114,114, 85, 43, 20, 20, 20, 20},
 	{114, 93, 79, 31, 20, 20, 20, 20},
@@ -55,7 +55,7 @@ static const unsigned char qtable_chrom[8][8] =
 };
 
 // zig-zag table
-static const unsigned char zig[64] =
+static const uint8_t zig[64] =
 {
 	 0,
 	 1, 8,
@@ -74,30 +74,30 @@ static const unsigned char zig[64] =
 	63
 };
 
-static const unsigned char std_dc_luminance_nrcodes[16] =
+static const uint8_t std_dc_luminance_nrcodes[16] =
 {
 	0,1,5,1,1,1,1,1,1,0,0,0,0,0,0,0
 };
-static const unsigned char std_dc_luminance_values[12] =
+static const uint8_t std_dc_luminance_values[12] =
 {
 	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
 };
 
-static const unsigned char std_dc_chrominance_nrcodes[16] =
+static const uint8_t std_dc_chrominance_nrcodes[16] =
 {
 	0,3,1,1,1,1,1,1,1,1,1,0,0,0,0,0
 };
-static const unsigned char std_dc_chrominance_values[12] =
+static const uint8_t std_dc_chrominance_values[12] =
 {
 	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
 };
 
-static const unsigned char std_ac_luminance_nrcodes[16] =
+static const uint8_t std_ac_luminance_nrcodes[16] =
 {
 	0,2,1,3,3,2,4,3,5,5,4,4,0,0,1,0x7d
 };
 
-static const unsigned char std_ac_luminance_values[162] =
+static const uint8_t std_ac_luminance_values[162] =
 {
 	0x01, 0x02, 0x03, 0x00, 0x04, 0x11, 0x05, 0x12,
 	0x21, 0x31, 0x41, 0x06, 0x13, 0x51, 0x61, 0x07,
@@ -122,12 +122,12 @@ static const unsigned char std_ac_luminance_values[162] =
 	0xf9, 0xfa
 };
 
-static const unsigned char std_ac_chrominance_nrcodes[16] =
+static const uint8_t std_ac_chrominance_nrcodes[16] =
 {
 	0,2,1,2,4,4,3,4,7,5,4,4,0,1,2,0x77
 };
 
-static const unsigned char std_ac_chrominance_values[162] =
+static const uint8_t std_ac_chrominance_values[162] =
 {
 	0x00, 0x01, 0x02, 0x03, 0x11, 0x04, 0x05, 0x21,
 	0x31, 0x06, 0x12, 0x41, 0x51, 0x07, 0x61, 0x71,
@@ -152,13 +152,13 @@ static const unsigned char std_ac_chrominance_values[162] =
 	0xf9, 0xfa
 };
 
-static const unsigned char HYDClen[12] =
+static const uint8_t HYDClen[12] =
 {
 	0x02, 0x03, 0x03, 0x03, 0x03, 0x03, 0x04, 0x05,
 	0x06, 0x07, 0x08, 0x09
 };
 
-static const unsigned char HCDClen[12] =
+static const uint8_t HCDClen[12] =
 {
 	0x02, 0x02, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
 	0x08, 0x09, 0x0a, 0x0b
@@ -177,7 +177,7 @@ static const unsigned short HCDCbits[12] =
 };
 
 
-static const unsigned char HYAClen[16][12] =
+static const uint8_t HYAClen[16][12] =
 {
 	{0x04, 0x02, 0x02, 0x03, 0x04, 0x05, 0x07, 0x08, 0x0a, 0x10, 0x10, 0x00},	// 00 - 0f
 	{0x00, 0x04, 0x05, 0x07, 0x09, 0x0b, 0x10, 0x10, 0x10, 0x10, 0x10, 0x00},	// 10 - 1f
@@ -217,7 +217,7 @@ static const unsigned short HYACbits[16][12] =
 	{0xFFF9, 0xFFF5, 0xFFF6, 0xFFF7, 0xFFF8, 0xFFF9, 0xFFFA, 0xFFFB, 0xFFFC, 0xFFFD, 0xFFFE, 0x0000}
 };
 
-static const unsigned char HCAClen[16][12] =
+static const uint8_t HCAClen[16][12] =
 {
 	{0x02, 0x02, 0x03, 0x04, 0x05, 0x05, 0x06, 0x07, 0x09, 0x0a, 0x0c, 0x00},	// 00 - 0f
 	{0x00, 0x04, 0x06, 0x08, 0x09, 0x0b, 0x0c, 0x10, 0x10, 0x10, 0x10, 0x00},	// 10 - 1f
@@ -300,7 +300,7 @@ static short quantize(const short data, const unsigned short qt)
 **  This function writes byte into output buffer
 **  and flushes the buffer if it is full.
 **  
-**  unsigned char jpgbuff - global output buffer;
+**  uint8_t jpgbuff - global output buffer;
 **  unsigned      jpgn    - the buffer index;
 **  
 **  ARGUMENTS: b - byte;
@@ -311,9 +311,9 @@ static short quantize(const short data, const unsigned short qt)
 // code-stream output counter
 static unsigned jpgn = 0;
 // code-stream output buffer, adjust its size if you need
-static unsigned char jpgbuff[256];
+static uint8_t jpgbuff[256];
 
-static void writebyte(const unsigned char b)
+static void writebyte(const uint8_t b)
 {
 	jpgbuff[jpgn++] = b;
 
@@ -356,7 +356,7 @@ static void write_SOF0info(const short height, const short width)
 	writeword(width);	//width
 	writebyte(3);		//nrofcomponents
 	writebyte(1);		//IdY
-	writebyte(0x21);	//HVY, 4:4:4 subsampling (0x22 for 4:2:0)
+	writebyte(0x11);	//HVY, 4:4:4 subsampling (0x22 for 4:2:0)
 	writebyte(0);		//QTY
 	writebyte(2);		//IdCb
 	writebyte(0x11);	//HVCb
@@ -391,12 +391,12 @@ static void write_DQTinfo(void)
 	writebyte(0);
 
 	for (i = 0; i < 64; i++) 
-		writebyte(((unsigned char*)qtable_0_lum)[zig[i]]); // zig-zag order
+		writebyte(((uint8_t*)qtable_0_lum)[zig[i]]); // zig-zag order
 
 	writebyte(1);
 
 	for (i = 0; i < 64; i++) 
-		writebyte(((unsigned char*)qtable_0_chrom)[zig[i]]); // zig-zag order
+		writebyte(((uint8_t*)qtable_0_chrom)[zig[i]]); // zig-zag order
 }
 
 static void write_DHTinfo(void)
@@ -455,7 +455,7 @@ static void writebits(bitbuffer_t *const pbb, unsigned bits, unsigned nbits)
 
 	// flush whole bytes
 	while (nbits >= 8) {
-		unsigned char b;
+		uint8_t b;
 
 		nbits -= 8;
 		b = pbb->buf >> nbits;
