@@ -52,7 +52,7 @@
 //on development code
 //#define RELEASE_VERSION
 
-extern WORKING_AREA(waUART_Thread, 512);
+extern WORKING_AREA(waUART_Thread, 256);
 /*
  * UART_Thread
  *

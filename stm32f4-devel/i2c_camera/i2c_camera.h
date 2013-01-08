@@ -191,6 +191,6 @@ void	powerdownCam(void);
 void	fifoGrabBytes( uint8_t *buf, uint32_t n );
 
 //Camera control thread -- Needs just a little bit of memory
-extern  WORKING_AREA(waCamera_Thread, 10240);
+extern  WORKING_AREA(waCamera_Thread, 10240+128);
 void	cameraControlThread(void* arg);
 #endif
