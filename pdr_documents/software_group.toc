@@ -1,0 +1,8 @@
+\beamer@endinputifotherversion {3.24pt}
+\beamer@sectionintoc {1}{Titlepage}{1}{0}{1}
+\beamer@sectionintoc {2}{Overview}{2}{0}{2}
+\beamer@sectionintoc {3}{Key Components}{3}{0}{3}
+\beamer@sectionintoc {4}{Task Diagram}{6}{0}{4}
+\beamer@sectionintoc {5}{System Operation Flowchart}{7}{0}{5}
+\beamer@sectionintoc {6}{Programming Task List}{8}{0}{6}
+\beamer@sectionintoc {7}{State of Development}{9}{0}{7}
