@@ -91,3 +91,6 @@ void wakeupCam(){
 void powerdownCam(){
   palSetPad(CAM_PORT, CAM_PWDN);
 }
+
+void cameraControlThread(void* arg){
+}

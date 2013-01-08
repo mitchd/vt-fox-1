@@ -57,8 +57,10 @@ int main(void) {
   palSetPadMode(GPIOB, 10, PAL_MODE_ALTERNATE(7));
   palSetPadMode(GPIOB, 11, PAL_MODE_ALTERNATE(7));
 
-  /* Activate serial driver 1
+  /* Activate serial driver 1 for debug
    *  PA9 (TX) and PA10(RX)
+   *
+   *  TODO: On final version, this is UART4 and PC10, PC11
    */
   sdStart(&SD1,NULL);
   palSetPadMode(GPIOA, 9 , PAL_MODE_ALTERNATE(7));
