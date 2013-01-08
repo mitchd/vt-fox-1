@@ -72,8 +72,8 @@ include $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32L1xx/port.mk
 include $(CHIBIOS)/os/kernel/kernel.mk
 include $(CHIBIOS)/uart_iface/uart_iface.mk
 include $(CHIBIOS)/spi_flash/spi_flash.mk
-#include $(CHIBIOS)/encoder/encoder.mk
-#include $(CHIBIOS)/i2c_camera/i2c_camera.mk
+include $(CHIBIOS)/encoder/encoder.mk
+#include $(CHIBIOS)/camera_iface/camera_iface.mk
 # Define linker script file here
 LDSCRIPT= $(PORTLD)/STM32L152xB.ld
 
@@ -87,8 +87,10 @@ CSRC = $(PORTSRC) \
        $(BOARDSRC) \
        $(SERIALSRC) \
        $(SPIFLASHSRC) \
+       $(ENCODERSRC) \
        $(CHIBIOS)/os/various/chprintf.c \
        main.c
+#$(CAMERASRC)
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -125,7 +127,9 @@ INCDIR = $(PORTINC) \
 	 $(BOARDINC) \
          $(CHIBIOS)/os/various \
 	 $(SERIALINC) \
-         $(SPIFLASHINC) 
+         $(SPIFLASHINC) \
+         $(ENCODERINC) \
+#         $(CAMERAINC)
 
 #
 # Project, sources and paths

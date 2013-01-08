@@ -52,7 +52,51 @@
 //on development code
 //#define RELEASE_VERSION
 
-extern WORKING_AREA(waUART_Thread, 512);
+extern WORKING_AREA(waUART_Thread, 256);
+/*
+ * UART_Thread
+ *
+ * This is the thread that handle all the UART communications for the board
+ *
+ * It's primary tasks are:
+ *
+ *      1) Receive and parse commands from the IHU
+ *      2) Signal the main thread to initiate a camera capture
+ *      3) Send requested data to the IHU
+ *              A) Telemetry (if implemented)
+ *              B) jpeg data
+ *
+ * As these additional feature are implemented *arg will begin to develop and
+ * documentation about the argument parameters will be provided.
+ *
+ *
+ * Key internal variables in this function:
+ *
+ * serial_events:
+ *      This is our event listener.  It is registered to the serial driver.  As
+ *      our error-handling code becomes more sophisticated, we can register all
+ *      possible serial events.
+ *
+ * myUART_events:
+ *      This is the event mask that gets registered to the serial driver.  Event
+ *      names are fairly self-explanatory
+ *
+ *COMMAND_SIZE (defined in uart_iface.h):
+ *      We expect commands from the IHU to be a certain length (1-4 bytes,
+ *      depending on the error correction we want in the actual commands or
+ *      whatev).
+ *
+ *readSize, writeSize:
+ *      Track the number of bytes read or written to the serial device for error
+ *      handling.
+ *
+ *read_buffer[COMMAND_SIZE]:
+ *      We only expect to receive COMMAND_SIZE chunks of data from the IHU.
+ *      With the exception of some debug/development-specific code (e.g. to
+ *      transfer data from camera to computer, or rgb data from computer to flash
+ *      We will also only give COMMAND_SIZE chunks to the uC
+ *
+ */
 msg_t UART_Thread(void* arg);
 
 
