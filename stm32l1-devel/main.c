@@ -54,8 +54,8 @@ int main(void) {
    * PB11(TX) and PB12(RX) are routed to USART3.
    */
   sdStart(&SD3, NULL);
+  palSetPadMode(GPIOB, 10, PAL_MODE_ALTERNATE(7));
   palSetPadMode(GPIOB, 11, PAL_MODE_ALTERNATE(7));
-  palSetPadMode(GPIOB, 12, PAL_MODE_ALTERNATE(7));
 
   /*
    * Create our UART thread

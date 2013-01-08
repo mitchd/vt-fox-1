@@ -42,7 +42,7 @@
  * Board frequencies.
  * NOTE: The LSE crystal is not fitted by default on the board.
  */
-#define STM32_LSECLK            0
+#define STM32_LSECLK            1000
 #define STM32_HSECLK            0
 
 /*
@@ -52,9 +52,49 @@
 #define STM32_VDD               300
 
 /*
- * MCU type as defined in the ST header file stm32l1xx.h.
+ * MCU type as defined in the ST header file stm32f4xx.h.
  */
 #define STM32L1XX_MD
+
+/*
+ * IO pins assignments.
+ */
+#define GPIOA_BUTTON            0
+#define GPIOA_LRCK              4
+#define GPIOA_SPC               5
+#define GPIOA_SDO               6
+#define GPIOA_SDI               7
+#define GPIOA_VBUS_FS           9
+#define GPIOA_OTG_FS_ID         10
+#define GPIOA_OTG_FS_DM         11
+#define GPIOA_OTG_FS_DP         12
+#define GPIOA_SWDIO             13
+#define GPIOA_SWCLK             14
+
+#define GPIOB_SWO               3
+#define GPIOB_SCL               6
+#define GPIOB_SDA               9
+#define GPIOB_SCK               10
+
+#define GPIOC_OTG_FS_POWER_ON   0
+#define GPIOC_DOUT              3
+#define GPIOC_MCLK              7
+#define GPIOC_SCLK              10
+#define GPIOC_SDIN              12
+
+#define GPIOD_RESET             4
+#define GPIOD_OVER_CURRENT      5
+#define GPIOD_LED4              12      /* Green LED.   */
+#define GPIOD_LED3              13      /* Orange LED.  */
+#define GPIOD_LED5              14      /* Red LED.     */
+#define GPIOD_LED6              15      /* Blue LED.    */
+
+#define GPIOE_INT1              0
+#define GPIOE_INT2              1
+#define GPIOE_CS_SPI            3
+
+#define GPIOH_OSC_IN            0
+#define GPIOH_OSC_OUT           1
 
 /*
  * I/O ports initial setup, this configuration is established soon after reset

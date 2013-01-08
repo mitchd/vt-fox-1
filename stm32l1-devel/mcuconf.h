@@ -47,7 +47,7 @@
 #define STM32_HSI_ENABLED                   TRUE
 #define STM32_LSI_ENABLED                   FALSE
 #define STM32_HSE_ENABLED                   FALSE
-#define STM32_LSE_ENABLED                   FALSE
+#define STM32_LSE_ENABLED                   TRUE
 #define STM32_ADC_CLOCK_ENABLED             FALSE
 #define STM32_USB_CLOCK_ENABLED             FALSE
 #define STM32_MSIRANGE                      STM32_MSIRANGE_2M
@@ -65,7 +65,7 @@
 #define STM32_MCOPRE                        STM32_MCOPRE_DIV2
 //Disable RTC
 #define STM32_RTCSEL                        STM32_RTCSEL_NOCLOCK
-#define STM32_RTCPRE                        STM32_RTCPRE_DIV1
+#define STM32_RTCPRE                        STM32_RTCPRE_DIV2
 #define STM32_VOS                           STM32_VOS_1P8
 #define STM32_PVD_ENABLE                    FALSE
 #define STM32_PLS                           STM32_PLS_LEV0
