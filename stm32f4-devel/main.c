@@ -80,7 +80,6 @@ int main(void) {
    */
   chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, Thread1, NULL);
 
-
   /*
    * Create our UART thread
    */

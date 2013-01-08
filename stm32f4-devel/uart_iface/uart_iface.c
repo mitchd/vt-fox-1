@@ -20,6 +20,7 @@ static void showMenu(void){
   chprintf((BaseChannel*)&SD3, "(2) Read Byte from SPI Flash\r\n");
   chprintf((BaseChannel*)&SD3, "(3) Write Bytes to SPI Flash\r\n");
   chprintf((BaseChannel*)&SD3, "(4) Read Bytes from SPI Flash\r\n");
+  chprintf((BaseChannel*)&SD3, "(5) Write a  to SPI Flash\r\n");
   return;
 }
 static void showWriteBytePrompt(void){
