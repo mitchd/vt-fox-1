@@ -177,20 +177,89 @@
 
 
 //Setup the I2C Camera SCCB
+/*
+ * This configures I2C1 hardware device for communicating with the camera:
+ *   Bus Speed: 400 kHz
+ *   Pins:
+ *     PB8 - SCL
+ *     PB9 - SDA 
+ */
 void	setupI2C(void);
+
+//Setup the Camera and FIFO control lines
+/*
+ * Configure the I/O pads for communicating with the camera:
+ *   PA1  - ~RESET to camera
+ *   PA2  - PWDN to camera
+ *   PA8  - Clock output to camera
+ *   PF8  - VSYNC input from camera
+ *   PF9  - HREF input from camera
+ *   PF0-7- Data port from FIFO
+ *   PC0  - FIFO Write Enable
+ *   PC1  - FIFO Read pointer reset
+ *   PC2  - FIFO OE
+ *   PC3  - FIFO Read clock
+ */
 void    setupCamPort(void);
 
 //Camera configuration
+/*
+ * Send I2C signals to the camera to configure it for proper operation.
+ * According to the useage manual, the following registers must be set for 30
+ * fps VGA YUV mode:
+ *   Reg  Val
+ *   0x11 0x01
+ *   0x12 0x00
+ *   0x0C 0x00
+ *   0x3E 0x00
+ *   0x70 0x3A
+ *   0x71 0x35
+ *   0x72 0x11
+ *   0x73 0xF0
+ *   0xA2 0x02
+ */
 uint8_t	configureCam(void);
 
 //Camera utility functions
+/*
+ * Toggle the appropriate PWDN pad to wake the camera up.
+ */
 void	wakeupCam(void);
+
+/*
+ * Toggle the appropriate PWDN pad to put the camera to sleep.
+ */
 void	powerdownCam(void);
 
 //Put n bytes from the FIFO into buf
+/*
+ * This manipulates the appropriate pads to grab n bytes from the FIFO.  It is
+ * assumed that the FIFO already contains valid information, and all we have to
+ * do is enable OE, and toggle the FIFO read clock n times.
+ *
+ * buf must be >= n bytes long
+ */
 void	fifoGrabBytes( uint8_t *buf, uint32_t n );
 
 //Camera control thread -- Needs just a little bit of memory
 extern  WORKING_AREA(waCamera_Thread, 10240+128);
+
+/*
+ * This is where the magic happens.  There are two phases of operation for this
+ * thread:
+ *
+ * 1) Sleep mode -- The thread sleeps until is receives a wake command from the
+ * main thread.  During sleep mode the camera is asleep, and the FIFO is in
+ * reset state.
+ *
+ * 2) Picture mode -- After waking, the thread commands the camera to take 8-row
+ * windows of the 640x480 area.  The FIFO is loaded 8 rows at a time, whereupon
+ * fifoGrabBytes loads the 8 rows into a 10240 byte buffer.  After the buffer is
+ * full, a compressor thread is spawned with high priority to compress the rows.
+ * While the compressor thread is running, the camera thread is reading another
+ * 8 rows into another 10240 byte buffer (this operation is double-buffered).
+ * This operation is repeated 60 times (480 total rows).
+ */
 void	cameraControlThread(void* arg);
+
 #endif
