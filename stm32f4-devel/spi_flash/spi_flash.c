@@ -74,7 +74,7 @@ void flashWriteByte( uint32_t addr, uint8_t data ){
   uint8_t flash_addr[3];
   uint8_t flash_cmd;
   //Map addr into 8-bit words to send
-  flash_addr[0] = (addr & 0x00FF0000)>>16; //MSB
+  flash_addr[0] = (addr & 0x000F0000)>>16; //MSB
   flash_addr[1] = (addr & 0x0000FF00)>>8;
   flash_addr[2] = (addr & 0x000000FF);     //LSB
   //Acquire the SPI device
@@ -115,7 +115,7 @@ void flashWriteBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   if( n > (FLASH_HIGH_ADDR - addr) || n < 2)
     return;
   //Map addr into 8-bit words to send
-  flash_addr[0] = (addr & 0x00FF0000)>>16; //MSB
+  flash_addr[0] = (addr & 0x000F0000)>>16; //MSB
   flash_addr[1] = (addr & 0x0000FF00)>>8;
   flash_addr[2] = (addr & 0x000000FF);     //LSB
   //Acquire the SPI device
@@ -180,7 +180,7 @@ uint8_t flashReadByte( uint32_t addr ){
   uint8_t returnByte;
   uint8_t zero = 0x00;
   //Map addr into 8-bit words to send
-  flash_addr[0] = (addr & 0x00FF0000)>>16; //MSB
+  flash_addr[0] = (addr & 0x000F0000)>>16; //MSB
   flash_addr[1] = (addr & 0x0000FF00)>>8;
   flash_addr[2] = (addr & 0x000000FF);     //LSB
   //Grab the SPI device
@@ -210,7 +210,7 @@ void flashReadBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   //For this function, we'll use the high-speed read functionality
   const uint8_t zero = 0x00;
   //Map addr into 8-bit words to send
-  flash_addr[0] = (addr & 0x00FF0000)>>16; //MSB
+  flash_addr[0] = (addr & 0x000F0000)>>16; //MSB
   flash_addr[1] = (addr & 0x0000FF00)>>8;
   flash_addr[2] = (addr & 0x000000FF);     //LSB
   //Grab the SPI device
@@ -242,7 +242,7 @@ void flashErase( uint32_t addr, uint8_t erase_cmd, uint8_t wait ){
   //with the appropriate MSBs to determine the sector to erase, so we don't
   //have to
   //Map addr into 8-bit words to send
-  flash_addr[0] = (addr & 0x00FF0000)>>16; //MSB
+  flash_addr[0] = (addr & 0x000F0000)>>16; //MSB
   flash_addr[1] = (addr & 0x0000FF00)>>8;
   flash_addr[2] = (addr & 0x000000FF);     //LSB
   //Acquire the device
