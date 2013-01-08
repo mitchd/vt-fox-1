@@ -128,8 +128,8 @@ INCDIR = $(PORTINC) \
          $(CHIBIOS)/os/various \
 	 $(SERIALINC) \
          $(SPIFLASHINC) \
-         $(ENCODERINC) \
-#         $(CAMERAINC)
+         $(ENCODERINC) 
+         #$(CAMERAINC)
 
 #
 # Project, sources and paths
