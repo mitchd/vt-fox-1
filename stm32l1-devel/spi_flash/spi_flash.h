@@ -70,10 +70,10 @@
  *
  * This function configures the SPI1 hardware module for communicating with the
  * Microchip SST Flash modules.  The following uC pins are used
- *   PA4  - NSS
- *   PA5 - SCK
- *   PA6 - MISO
- *   PA7 - MOSI
+ *   PA15 - NSS
+ *   PB3 - SCK
+ *   PB4 - MISO
+ *   PB5 - MOSI
  *
  * One implementation note:
  * 

@@ -318,6 +318,34 @@ msg_t UART_Thread(void* arg){
                input_pos++;
            }
          
+         }else if( myUART_state == UART_TX_RGB ){
+           input_buffer[input_pos] = read_buffer[0];
+           if( input_buffer[input_pos] == (uint8_t)'\r' ){
+              uint32_t bytes = 0;
+              uint32_t mult = 1;
+              uint8_t i;
+              for( i = 0; i < input_pos-1; i++ ){
+                mult *= 10;
+              }
+              for( i = 0; i < input_pos; i++ ){
+                bytes += (input_buffer[i] - (uint8_t)'0') * mult;
+                mult /= 10;
+              }
+              for( i = 0; i < INPUT_BUFFER_SIZE; i++ )
+                input_buffer[i] = 0x00;
+              chprintf((BaseChannel*)&SD3,"\r\nNum Bytes: %d\r\n", bytes);
+              flashReadBytes( 0x000000, input_buffer, bytes );
+              sdWrite( &SD3, input_buffer, bytes);
+              myUART_state = UART_COMM_IDLE;
+              showMenu();
+           }else{
+             if(input_pos == INPUT_BUFFER_SIZE-1){
+               input_pos = 0;
+               //buffer flush?
+             }else
+               input_pos++;
+           }
+         
          }
        }
     }
