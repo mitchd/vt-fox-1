@@ -72,8 +72,6 @@ include $(CHIBIOS)/os/ports/GCC/ARMCMx/STM32F4xx/port.mk
 include $(CHIBIOS)/os/kernel/kernel.mk
 include $(CHIBIOS)/uart_iface/uart_iface.mk
 include $(CHIBIOS)/spi_flash/spi_flash.mk
-include $(CHIBIOS)/encoder/encoder.mk
-include $(CHIBIOS)/camera_iface/camera_iface.mk
 # Define linker script file here
 LDSCRIPT= $(PORTLD)/STM32F407xG.ld
 #LDSCRIPT= $(PORTLD)/STM32F407xG_CCM.ld
@@ -88,8 +86,6 @@ CSRC = $(PORTSRC) \
        $(BOARDSRC) \
        $(SERIALSRC) \
        $(SPIFLASHSRC) \
-       $(ENCODERSRC) \
-       $(CAMERASRC) \
        $(CHIBIOS)/os/various/chprintf.c \
        main.c
 
@@ -128,9 +124,7 @@ INCDIR = $(PORTINC) \
 	 $(BOARDINC) \
          $(CHIBIOS)/os/various \
 	 $(SERIALINC) \
-         $(SPIFLASHINC) \
-	 $(CAMERAINC) \
-         $(ENCODERINC)
+         $(SPIFLASHINC) 
 
 #
 # Project, sources and paths
