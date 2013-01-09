@@ -155,6 +155,28 @@
 #define CAM_PWDN	2    //Power down camera on high
 #define CAM_XCLK	8    //Clock input to camera
 
+//Development Interface
+#define FIFO_DATA_PORT  GPIOC
+#define FIFO_D0		0
+#define FIFO_D1		1
+#define FIFO_D2		2
+#define FIFO_D3		3
+#define FIFO_D4		6
+#define FIFO_D5		7
+#define FIFO_D6		8
+#define FIFO_D7		9
+//Development Interface
+#define CAM_PORT2	GPIOA
+#define CAM_VSYNC_OUT	0
+#define CAM_HREF_OUT	3
+//Development Interface
+#define FIFO_CTL_PORT	GPIOB
+#define FIFO_WEN	12
+#define FIFO_RRST	13
+#define FIFO_OE		14
+#define FIFO_RCLK	15
+
+/*This is the release configuration
 #define CAM_PORT2	GPIOF//2nd camera control port
 #define CAM_VSYNC_OUT	8    //VSYNC output from camera
 #define CAM_HREF_OUT	9    //HREF output from camera
@@ -174,6 +196,7 @@
 #define FIFO_RRST	1    //Read pointer reset
 #define FIFO_OE		2    //Read output enable
 #define FIFO_RCLK	3    //Read clock
+*/
 
 
 //Setup the I2C Camera SCCB

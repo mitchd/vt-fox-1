@@ -73,7 +73,7 @@ include $(CHIBIOS)/os/kernel/kernel.mk
 include $(CHIBIOS)/uart_iface/uart_iface.mk
 include $(CHIBIOS)/spi_flash/spi_flash.mk
 include $(CHIBIOS)/encoder/encoder.mk
-#include $(CHIBIOS)/camera_iface/camera_iface.mk
+include $(CHIBIOS)/camera_iface/camera_iface.mk
 # Define linker script file here
 LDSCRIPT= $(PORTLD)/STM32L152xB.ld
 
@@ -88,6 +88,7 @@ CSRC = $(PORTSRC) \
        $(SERIALSRC) \
        $(SPIFLASHSRC) \
        $(ENCODERSRC) \
+       $(CAMERASRC) \
        $(CHIBIOS)/os/various/chprintf.c \
        main.c
 #$(CAMERASRC)
@@ -128,8 +129,8 @@ INCDIR = $(PORTINC) \
          $(CHIBIOS)/os/various \
 	 $(SERIALINC) \
          $(SPIFLASHINC) \
-         $(ENCODERINC) 
-         #$(CAMERAINC)
+         $(ENCODERINC) \
+         $(CAMERAINC)
 
 #
 # Project, sources and paths

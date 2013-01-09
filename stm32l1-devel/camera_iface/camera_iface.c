@@ -14,10 +14,10 @@ void setupI2C(void){
 
   i2cStart(&I2CD1, &i2cfg1);
 
-  palSetMode(GPIOB, 8, PAL_MODE_ALTERNATE(4) |
-                       PAL_MODE_OUTPUT_OPENDRAIN );
-  palSetMode(GPIOB, 9, PAL_MODE_ALTERNATE(4) |
-                       PAL_MODE_OUTPUT_OPENDRAIN );
+  palSetPadMode(GPIOB, 8, PAL_MODE_ALTERNATE(4) |
+                          PAL_MODE_OUTPUT_OPENDRAIN );
+  palSetPadMode(GPIOB, 9, PAL_MODE_ALTERNATE(4) |
+                          PAL_MODE_OUTPUT_OPENDRAIN );
 }
 
 //Configure the camera pads
@@ -93,4 +93,11 @@ void powerdownCam(){
 }
 
 void cameraControlThread(void* arg){
+  setupCamPort();
+  msg_t success = configureCam();
+  chprintf((BaseChannel *)&SD1, "Camera config status: %d", success);
+  while(TRUE){
+    chprintf((BaseChannel *)&SD1, "Inside camera thread\r\n");
+    chThdSleepMilliseconds(500);
+  }
 }
