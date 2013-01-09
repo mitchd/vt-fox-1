@@ -3,6 +3,7 @@
 #include "unistd.h"
 #include "ch.h"
 #include "hal.h"
+#include "chprintf.h"
 
 #define _CAMERA_IFACE_
 
@@ -283,6 +284,6 @@ extern  WORKING_AREA(waCamera_Thread, 10240+128);
  * 8 rows into another 10240 byte buffer (this operation is double-buffered).
  * This operation is repeated 60 times (480 total rows).
  */
-void	cameraControlThread(void* arg);
+void	cameraControlThread(void /*void* arg*/);
 
 #endif
