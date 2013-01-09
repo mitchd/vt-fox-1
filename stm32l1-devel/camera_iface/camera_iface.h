@@ -7,8 +7,7 @@
 
 #define _CAMERA_IFACE_
 
-#define CAM_I2C_ADDR	0x43
-#define CAM_I2C_ADDRW	0x42
+#define CAM_I2C_ADDR	0x42>>1
 
 //Camera Registers
 

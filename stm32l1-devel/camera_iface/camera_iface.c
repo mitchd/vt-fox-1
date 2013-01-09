@@ -5,7 +5,7 @@
 static const I2CConfig i2cfg1 = {
   OPMODE_I2C,
   100000,
-  FAST_DUTY_CYCLE_2
+  STD_DUTY_CYCLE
 };
 
 //Setup the I2C controller
@@ -13,11 +13,11 @@ void setupI2C(void){
   i2cInit();
 
   i2cStart(&I2CD1, &i2cfg1);
-  
+  chprintf((BaseChannel *)&SD1, "I2C Clock Speed: %d\r\n", I2C_CLK_FREQ );  
   //SCL
-  palSetPadMode(GPIOB, 8, PAL_MODE_ALTERNATE(4));
+  palSetPadMode(GPIOB, 8, PAL_MODE_ALTERNATE(4) );
   //SDA
-  palSetPadMode(GPIOB, 9, PAL_MODE_ALTERNATE(4));
+  palSetPadMode(GPIOB, 9, PAL_MODE_ALTERNATE(4) );
 }
 
 //Configure the camera pads
@@ -44,7 +44,7 @@ void setupCamPort(void){
 msg_t configureCam(void){
   uint8_t tx_buf[32];
   uint8_t rx_buf[4];
-
+  uint8_t address;
   msg_t msg_value;
   //30 fps VGA YUV Mode
   tx_buf[0] = CAM_CLKRC;
@@ -71,12 +71,16 @@ msg_t configureCam(void){
 
   //Grab the bus
   i2cAcquireBus(&I2CD1);
-  msg_value = i2cMasterTransmitTimeout( &I2CD1, CAM_I2C_ADDRW,
-                                        tx_buf, 2,
-                                        rx_buf, 0,
-                                        1000 );
-
-  i2cMasterTransmitTimeout( &I2CD1, CAM_I2C_ADDR, tx_buf, 1, rx_buf, 1,1000 );
+  address = CAM_I2C_ADDR;
+  msg_value = i2cMasterTransmit( &I2CD1, address,
+                                 tx_buf, 2,
+                                 rx_buf, 0 );
+  msg_value = i2cMasterTransmit( &I2CD1, address,
+                                 tx_buf, 1,
+                                 rx_buf, 0 );
+  msg_value = i2cMasterReceive( &I2CD1, address,
+                                rx_buf, 1 );
+  chprintf((BaseChannel *)&SD1, "RX Byte %d\r\n", rx_buf[0] );
   i2cReleaseBus(&I2CD1);
 
   //Poweroff camera
@@ -90,11 +94,11 @@ msg_t configureCam(void){
 }
 
 void wakeupCam(){
-  palClearPad(CAM_PORT, CAM_PWDN);
+  //palClearPad(CAM_PORT, CAM_PWDN);
 }
 
 void powerdownCam(){
-  palSetPad(CAM_PORT, CAM_PWDN);
+  //palSetPad(CAM_PORT, CAM_PWDN);
 }
 
 msg_t cameraControlThread(void* arg){
