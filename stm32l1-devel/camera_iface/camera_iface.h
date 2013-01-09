@@ -7,8 +7,8 @@
 
 #define _CAMERA_IFACE_
 
-#define CAM_I2C_ADDR	0x42
-#define CAM_I2C_ADDRW	0x43
+#define CAM_I2C_ADDR	0x43
+#define CAM_I2C_ADDRW	0x42
 
 //Camera Registers
 
@@ -266,7 +266,7 @@ void	powerdownCam(void);
 void	fifoGrabBytes( uint8_t *buf, uint32_t n );
 
 //Camera control thread -- Needs just a little bit of memory
-extern  WORKING_AREA(waCamera_Thread, 10240+128);
+extern  WORKING_AREA(waCamera_Thread, 5120+128);
 
 /*
  * This is where the magic happens.  There are two phases of operation for this
@@ -284,6 +284,6 @@ extern  WORKING_AREA(waCamera_Thread, 10240+128);
  * 8 rows into another 10240 byte buffer (this operation is double-buffered).
  * This operation is repeated 60 times (480 total rows).
  */
-void	cameraControlThread(void /*void* arg*/);
+msg_t	cameraControlThread(void* arg);
 
 #endif

@@ -4,8 +4,8 @@
 //I2C#1 Configuration stuff
 static const I2CConfig i2cfg1 = {
   OPMODE_I2C,
-  400000,
-  FAST_DUTY_CYCLE_2,
+  100000,
+  FAST_DUTY_CYCLE_2
 };
 
 //Setup the I2C controller
@@ -13,11 +13,11 @@ void setupI2C(void){
   i2cInit();
 
   i2cStart(&I2CD1, &i2cfg1);
-
-  palSetPadMode(GPIOB, 8, PAL_MODE_ALTERNATE(4) |
-                          PAL_MODE_OUTPUT_OPENDRAIN );
-  palSetPadMode(GPIOB, 9, PAL_MODE_ALTERNATE(4) |
-                          PAL_MODE_OUTPUT_OPENDRAIN );
+  
+  //SCL
+  palSetPadMode(GPIOB, 8, PAL_MODE_ALTERNATE(4));
+  //SDA
+  palSetPadMode(GPIOB, 9, PAL_MODE_ALTERNATE(4));
 }
 
 //Configure the camera pads
@@ -71,14 +71,19 @@ msg_t configureCam(void){
 
   //Grab the bus
   i2cAcquireBus(&I2CD1);
-  msg_value = i2cMasterTransmitTimeout( &I2CD1, CAM_I2C_ADDR,
-                                        tx_buf, 18,
+  msg_value = i2cMasterTransmitTimeout( &I2CD1, CAM_I2C_ADDRW,
+                                        tx_buf, 2,
                                         rx_buf, 0,
-                                        TIME_IMMEDIATE );
+                                        1000 );
+
+  i2cMasterTransmitTimeout( &I2CD1, CAM_I2C_ADDR, tx_buf, 1, rx_buf, 1,1000 );
   i2cReleaseBus(&I2CD1);
 
   //Poweroff camera
   powerdownCam();
+  if( rx_buf[0] == tx_buf[1] ){
+    return RDY_OK;
+  }
   return msg_value;
  
 
@@ -92,12 +97,40 @@ void powerdownCam(){
   palSetPad(CAM_PORT, CAM_PWDN);
 }
 
-void cameraControlThread(void /*void* arg*/){
+msg_t cameraControlThread(void* arg){
+  chprintf((BaseChannel *)&SD1, "Beginning camera control thread\r\n");
+  setupI2C();
   setupCamPort();
-  msg_t success = configureCam();
-  chprintf((BaseChannel *)&SD1, "Camera config status: %d", success);
   while(TRUE){
-    chprintf((BaseChannel *)&SD1, "Inside camera thread\r\n");
-    chThdSleepMilliseconds(500);
+    //chprintf((BaseChannel *)&SD1, "Inside camera thread\r\n");
+    chThdSleepMilliseconds(2000);
+    msg_t success = configureCam();
+    chprintf((BaseChannel *)&SD1, "Camera config status: %d\r\n", success);
+    if( success == RDY_OK ){
+       chprintf((BaseChannel *)&SD1, "Config TX OK\r\n");
+    }else if( success == RDY_RESET ){
+      chprintf((BaseChannel *)&SD1, "I2C Errors Occured\r\n");
+      i2cflags_t errors = i2cGetErrors(&I2CD1);
+      if( errors & 0x00 )
+        chprintf((BaseChannel *)&SD1, "No Errors\r\n");
+      if( errors & 0x01 )
+        chprintf((BaseChannel *)&SD1, "Bus Error\r\n");
+      if( errors & 0x02 )
+        chprintf((BaseChannel *)&SD1, "Arbitration Lost\r\n");
+      if( errors & 0x04 )
+        chprintf((BaseChannel *)&SD1, "ACK Failure\r\n");
+      if( errors & 0x08 )
+        chprintf((BaseChannel *)&SD1, "Overrun\r\n");
+      if( errors & 0x10 )
+        chprintf((BaseChannel *)&SD1, "PEC Error\r\n");
+      if( errors & 0x20 )
+        chprintf((BaseChannel *)&SD1, "Timeout\r\n");
+      if( errors & 0x40 )
+        chprintf((BaseChannel *)&SD1, "SMBus Alert\r\n");
+    }else if( success == RDY_TIMEOUT ){
+      chprintf((BaseChannel *)&SD1, "I2C Timeout Encountered\r\n");
+    }else{
+      chprintf((BaseChannel *)&SD1, "Unknown state returned\r\n");
+    }
   }
 }

@@ -29,10 +29,11 @@
 #include "hal.h"
 #include "uart_iface.h"
 #include "spi_flash.h"
+#include "camera_iface.h"
 #include "chprintf.h"
 
 WORKING_AREA(waUART_Thread, 512);
-
+WORKING_AREA(waCamera_Thread, 5120+128);
 
 /*
  * Application entry point.
@@ -72,6 +73,9 @@ int main(void) {
                     UART_Thread,NULL);
 
   configureSPIFlash();
+
+  chThdCreateStatic(waCamera_Thread, sizeof(waCamera_Thread), NORMALPRIO,
+                    cameraControlThread,NULL);
   /*
    * Normal main() thread activity, in this demo it does nothing except
    * sleeping in a loop and check the button state, when the button is
@@ -79,7 +83,7 @@ int main(void) {
    * driver 2.
    */
   while (TRUE) {
-    chprintf((BaseChannel *)&SD1, "Inside main() thread\r\n");
+//    chprintf((BaseChannel *)&SD1, "Inside main() thread\r\n");
     chThdSleepMilliseconds(500);
   }
 }
