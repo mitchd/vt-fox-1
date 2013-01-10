@@ -1,27 +1,195 @@
 #include "camera_iface.h"
 
+uint8_t ticks = 0;
 
-//I2C#1 Configuration stuff
-static const I2CConfig i2cfg1 = {
-  OPMODE_I2C,
-  100000,
-  STD_DUTY_CYCLE
-};
-
-//Setup the I2C controller
-void setupI2C(void){
-  i2cInit();
-
-  i2cStart(&I2CD1, &i2cfg1);
-  chprintf((BaseChannel *)&SD1, "I2C Clock Speed: %d\r\n", I2C_CLK_FREQ );  
-  //SCL
-  palSetPadMode(GPIOB, 8, PAL_MODE_ALTERNATE(4) );
-  //SDA
-  palSetPadMode(GPIOB, 9, PAL_MODE_ALTERNATE(4) );
-  palSetPad(GPIOB, 8);
-  palSetPad(GPIOB, 9);
+/*
+ * * GPT3 callback.
+ * */
+static void gpt3cb(GPTDriver *gptp)
+{
+  (void)gptp;
+  ticks += 1;
 }
 
+static const GPTConfig gpt3cfg = {
+  200000,    /* 100KHz timer clock.*/
+  gpt3cb    /* Timer callback.*/
+};
+
+//Setup the SCCB controller
+void setupSCCB(void){
+  //SCL
+  palSetPadMode(CAM_CTL_PORT, CAM_SCL, PAL_MODE_OUTPUT_OPENDRAIN |
+                                       PAL_STM32_OSPEED_HIGHEST );
+  //SDA
+  palSetPadMode(CAM_CTL_PORT, CAM_SDA, PAL_MODE_OUTPUT_OPENDRAIN |
+                                       PAL_STM32_OSPEED_HIGHEST );
+}
+
+//Use this to turn on the timer
+static inline prepareTimer(void){
+  gptStart(&GPT3, &gpt3cfg);
+}
+
+//Don't forget to turn it off when we're done transferring data
+static inline deactivateTimer(void){
+  gptStop(&GPT3);
+}
+
+//Initiate SCCB start condition -- requires the timer
+static inline startCondition(void){
+  ticks = 0;
+  palWritePad(CAM_CTL_PORT, CAM_SDA, 1);
+  while( ticks < 1 );
+  palWritePad(CAM_CTL_PORT, CAM_SDA, 0);
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+}
+
+//Release the SCCB -- requires the timer
+static inline stopCondition(void){
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  ticks = 0;
+  while( ticks < 1);
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  palWritePad(CAM_CTL_PORT, CAM_SDA, 1);
+  while( ticks < 2);
+}
+
+//Idle the SCCB
+static inline idleState(void){
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  palWritePad(CAM_CTL_PORT, CAM_SDA, 1);
+}
+ 
+//Write a byte, MSB first, with don't-care at the end -- requires the timer
+static inline writeByte(uint8_t byte){
+  ticks = 0;
+  idleState();
+  while( ticks < 1 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  palWritePad(CAM_CTL_PORT, CAM_SDA, (byte & 0x80)>>7);
+  while( ticks < 2 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  while( ticks < 3 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  palWritePad(CAM_CTL_PORT, CAM_SDA, (byte & 0x40)>>6);
+  while( ticks < 4 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  while( ticks < 5 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  palWritePad(CAM_CTL_PORT, CAM_SDA, (byte & 0x20)>>5);
+  while( ticks < 6 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  while( ticks < 7 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  palWritePad(CAM_CTL_PORT, CAM_SDA, (byte & 0x10)>>4);
+  while( ticks < 8 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  while( ticks < 9 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  palWritePad(CAM_CTL_PORT, CAM_SDA, (byte & 0x08)>>3);
+  while( ticks < 10 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  while( ticks < 11 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  palWritePad(CAM_CTL_PORT, CAM_SDA, (byte & 0x04)>>2);
+  while( ticks < 12 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  while( ticks < 13 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  palWritePad(CAM_CTL_PORT, CAM_SDA, (byte & 0x02)>>1);
+  while( ticks < 14 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  while( ticks < 15 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  palWritePad(CAM_CTL_PORT, CAM_SDA, (byte & 0x01) );
+  while( ticks < 16 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  while( ticks < 17 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  while( ticks < 18 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  while( ticks < 19 );
+}
+
+//Write reg <= value using the three-phase transmission cycle in the SCCB
+//datasheet
+static void cameraWriteCycle( uint8_t reg, uint8_t value ){
+  startCondition();
+  writeByte(CAM_ADDR_W);
+  writeByte(reg);
+  writeByte(value);
+  stopCondition();
+  return;
+}
+
+static uint8_t readByte(){ 
+  uint8_t byte = 0;
+  ticks = 0;
+  idleState();
+  while( ticks < 1 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  while( ticks < 2 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<7;
+  while( ticks < 3 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  while( ticks < 4 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<6;
+  while( ticks < 5 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  while( ticks < 6 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<5;
+  while( ticks < 7 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  while( ticks < 8 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<4;
+  while( ticks < 9 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  while( ticks < 10 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<3;
+  while( ticks < 11 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  while( ticks < 12 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<2;
+  while( ticks < 13 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  while( ticks < 14 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<1;
+  while( ticks < 15 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  while( ticks < 16 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) );
+  while( ticks < 17 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  while( ticks < 18 );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+}
+//Read reg => retval using two-phase write and read cycle -- requires the timer
+static uint8_t cameraReadCycle( uint8_t reg ){
+  uint8_t byte;
+  startCondition();
+  writeByte(CAM_ADDR_W);
+  writeByte(reg);
+  stopCondition();
+  ticks = 0;
+
+  idleState();
+  while( ticks < 4 );
+
+  startCondition();
+  writeByte(CAM_ADDR_R);
+  byte = readByte();
+  stopCondition();
+  return byte;
+}
 //Configure the camera pads
 void setupCamPort(void){
   palSetPadMode(CAM_PORT, CAM_XCLK, PAL_MODE_ALTERNATE(0) | 

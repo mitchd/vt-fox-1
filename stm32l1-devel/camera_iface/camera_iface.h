@@ -7,7 +7,8 @@
 
 #define _CAMERA_IFACE_
 
-#define CAM_I2C_ADDR	0x42>>1
+#define CAM_ADDR_W	0x42
+#define CAM_ADDR_R      0x43
 
 //Camera Registers
 
@@ -155,6 +156,10 @@
 #define CAM_PWDN	2    //Power down camera on high
 #define CAM_XCLK	8    //Clock input to camera
 
+#define CAM_CTL_PORT	GPIOB//Port for the SCL/SDA Pins
+#define CAM_SCL		8    //Clock Line
+#define CAM_SDA		9    //Data Line
+
 //Development Interface
 #define FIFO_DATA_PORT  GPIOC
 #define FIFO_D0		0
@@ -199,15 +204,15 @@
 */
 
 
-//Setup the I2C Camera SCCB
+//Setup the Camera SCCB
 /*
- * This configures I2C1 hardware device for communicating with the camera:
- *   Bus Speed: 400 kHz
+ * This configures a software device for communicating with the camera:
+ *   Bus Speed: ~400 kHz
  *   Pins:
  *     PB8 - SCL
  *     PB9 - SDA 
  */
-void	setupI2C(void);
+void	setupSCCB(void);
 
 //Setup the Camera and FIFO control lines
 /*
