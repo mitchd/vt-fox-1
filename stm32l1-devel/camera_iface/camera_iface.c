@@ -4,7 +4,7 @@
 //I2C#1 Configuration stuff
 static const I2CConfig i2cfg1 = {
   OPMODE_I2C,
-  5000,
+  100000,
   STD_DUTY_CYCLE
 };
 
@@ -24,7 +24,8 @@ void setupI2C(void){
 
 //Configure the camera pads
 void setupCamPort(void){
-  palSetPadMode(CAM_PORT, CAM_XCLK, PAL_MODE_ALTERNATE(0) );
+  palSetPadMode(CAM_PORT, CAM_XCLK, PAL_MODE_ALTERNATE(0) | 
+                                    PAL_STM32_OSPEED_HIGHEST);
   palSetPadMode(CAM_PORT, CAM_RESET, PAL_MODE_OUTPUT_PUSHPULL);
   palSetPadMode(CAM_PORT, CAM_PWDN, PAL_MODE_OUTPUT_PUSHPULL);
   palSetPadMode(CAM_PORT2, CAM_VSYNC_OUT, PAL_MODE_INPUT);
