@@ -1,4 +1,4 @@
-This is pdfTeXk, Version 3.141592-1.40.3 (Web2C 7.5.6) (format=pdflatex 2012.9.27)  8 JAN 2013 16:30
+This is pdfTeXk, Version 3.141592-1.40.3 (Web2C 7.5.6) (format=pdflatex 2012.9.27)  11 JAN 2013 10:55
 entering extended mode
  %&-line parsing enabled.
 **software_group.tex
@@ -956,7 +956,7 @@ LaTeX Font Warning: Font shape `OT1/cmss/m/n' in size <4> not available
 ] [5
 
 ]
-<task_diagram.png, id=189, 692.989pt x 217.613pt>
+<task_diagram.png, id=191, 692.989pt x 217.613pt>
 File: task_diagram.png Graphic file (type png)
  <use task_diagram.png>
 Overfull \hbox (4.19835pt too wide) in paragraph at lines 85--85
@@ -965,7 +965,7 @@ Overfull \hbox (4.19835pt too wide) in paragraph at lines 85--85
 
 [6
 
- <./task_diagram.png>] <flow_chart.png, id=217, 579.766pt x 709.049pt>
+ <./task_diagram.png>] <flow_chart.png, id=219, 579.766pt x 709.049pt>
 File: flow_chart.png Graphic file (type png)
 
 <use flow_chart.png> [7
@@ -991,16 +991,16 @@ LaTeX Font Warning: Size substitutions with differences
 
  ) 
 Here is how much of TeX's memory you used:
- 12832 strings out of 256216
- 240373 string characters out of 1917072
- 306729 words of memory out of 1500000
- 15787 multiletter control sequences out of 10000+200000
+ 12872 strings out of 256216
+ 240627 string characters out of 1917072
+ 306378 words of memory out of 1500000
+ 15827 multiletter control sequences out of 10000+200000
  5759 words of font info for 21 fonts, out of 1200000 for 2000
  645 hyphenation exceptions out of 8191
  49i,15n,57p,430b,659s stack positions out of 5000i,500n,6000p,200000b,15000s
 </usr/share/texmf/fonts/type1/bluesky/cm/cmss10.pfb></usr/share/texmf/fonts/t
 ype1/bluesky/cm/cmss12.pfb></usr/share/texmf/fonts/type1/bluesky/cm/cmss8.pfb>
-Output written on software_group.pdf (9 pages, 312652 bytes).
+Output written on software_group.pdf (9 pages, 312528 bytes).
 PDF statistics:
  317 PDF objects out of 1000 (max. 8388607)
  26 named destinations out of 1000 (max. 131072)
