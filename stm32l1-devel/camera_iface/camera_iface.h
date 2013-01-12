@@ -1,13 +1,52 @@
+/*
+This file is part of The Virginia Tech Amateur Radio Association's AMSAT FOX-1
+experiment.
+
+There are two main projects from which this code derives:
+
+ChibiOS/RT 2.4.3
+jpegant
+
+ChibiOS/RT is unmodified, and retains its source structure in ./os/
+
+jpegant is modified from its original version, and best efforts are made to
+annotate the differences between the released jpegant and the contributions made
+by VTARA.
+
+All of the source code within this project is copyright (2012, 2013):
+
+Joseph "Mitch" Davis, WQ3C, mitchd@vt.edu
+Kevin Burns, KJ4SYL, kevinpd@vt.edu
+Virginia Polytechnic Institute and State University
+
+This entire project is licensed under the GNU Public License (GPL) Version 3:
+
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef _CAMERA_IFACE_
 
 #include "unistd.h"
 #include "ch.h"
 #include "hal.h"
+#include "chprintf.h"
 
 #define _CAMERA_IFACE_
 
-#define CAM_I2C_ADDR	0x42
-#define CAM_I2C_ADDRW	0x43
+#define CAM_ADDR_W	0x42
+#define CAM_ADDR_R      0x43
 
 //Camera Registers
 
@@ -155,6 +194,32 @@
 #define CAM_PWDN	2    //Power down camera on high
 #define CAM_XCLK	8    //Clock input to camera
 
+#define CAM_CTL_PORT	GPIOB//Port for the SCL/SDA Pins
+#define CAM_SCL		8    //Clock Line
+#define CAM_SDA		9    //Data Line
+
+//Development Interface
+#define FIFO_DATA_PORT  GPIOC
+#define FIFO_D0		0
+#define FIFO_D1		1
+#define FIFO_D2		2
+#define FIFO_D3		3
+#define FIFO_D4		6
+#define FIFO_D5		7
+#define FIFO_D6		8
+#define FIFO_D7		9
+//Development Interface
+#define CAM_PORT2	GPIOA
+#define CAM_VSYNC_OUT	0
+#define CAM_HREF_OUT	3
+//Development Interface
+#define FIFO_CTL_PORT	GPIOB
+#define FIFO_WEN	12
+#define FIFO_RRST	13
+#define FIFO_OE		14
+#define FIFO_RCLK	15
+
+/*This is the release configuration
 #define CAM_PORT2	GPIOF//2nd camera control port
 #define CAM_VSYNC_OUT	8    //VSYNC output from camera
 #define CAM_HREF_OUT	9    //HREF output from camera
@@ -174,17 +239,18 @@
 #define FIFO_RRST	1    //Read pointer reset
 #define FIFO_OE		2    //Read output enable
 #define FIFO_RCLK	3    //Read clock
+*/
 
 
-//Setup the I2C Camera SCCB
+//Setup the Camera SCCB
 /*
- * This configures I2C1 hardware device for communicating with the camera:
- *   Bus Speed: 400 kHz
+ * This configures a software device for communicating with the camera:
+ *   Bus Speed: ~400 kHz
  *   Pins:
  *     PB8 - SCL
  *     PB9 - SDA 
  */
-void	setupI2C(void);
+void	setupSCCB(void);
 
 //Setup the Camera and FIFO control lines
 /*
@@ -242,7 +308,7 @@ void	powerdownCam(void);
 void	fifoGrabBytes( uint8_t *buf, uint32_t n );
 
 //Camera control thread -- Needs just a little bit of memory
-extern  WORKING_AREA(waCamera_Thread, 10240+128);
+extern  WORKING_AREA(waCamera_Thread, 5120+128);
 
 /*
  * This is where the magic happens.  There are two phases of operation for this
@@ -260,6 +326,6 @@ extern  WORKING_AREA(waCamera_Thread, 10240+128);
  * 8 rows into another 10240 byte buffer (this operation is double-buffered).
  * This operation is repeated 60 times (480 total rows).
  */
-void	cameraControlThread(void* arg);
+msg_t	cameraControlThread(void* arg);
 
 #endif
