@@ -323,9 +323,20 @@ void	powerdownCam(void);
  */
 void	fifoGrabBytes( uint8_t *buf, uint32_t n );
 
-//Camera control thread -- Needs just a little bit of memory
-extern  WORKING_AREA(waCamera_Thread, 5120+128);
+//Set Camera Rows.
+/*
+ *
+ * We want to grab rows of 8 at a time, so set the corresponding registers for
+ * the sequence number
+ *
+ * 480/8 = 60 segments
+ *
+ * Specify the segment number (0-59)
+ */
+msg_t	setupSegment( uint8_t segment );
 
+//Camera control thread -- Needs just a little bit of memory
+extern  WORKING_AREA(waCamera_Thread, 1280+256);
 /*
  * This is where the magic happens.  There are two phases of operation for this
  * thread:

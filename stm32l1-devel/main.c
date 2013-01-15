@@ -43,7 +43,7 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #include "chprintf.h"
 
 WORKING_AREA(waUART_Thread, 512);
-WORKING_AREA(waCamera_Thread, 5120+128);
+WORKING_AREA(waCamera_Thread, 1280+256);
 
 /*
  * Application entry point.
@@ -82,7 +82,7 @@ int main(void) {
   chThdCreateStatic(waUART_Thread, sizeof(waUART_Thread), NORMALPRIO,
                     UART_Thread,NULL);
 
-  configureSPIFlash();
+  //configureSPIFlash();
 
   chThdCreateStatic(waCamera_Thread, sizeof(waCamera_Thread), NORMALPRIO,
                     cameraControlThread,NULL);
@@ -93,7 +93,6 @@ int main(void) {
    * driver 2.
    */
   while (TRUE) {
-//    chprintf((BaseChannel *)&SD1, "Inside main() thread\r\n");
     chThdSleepMilliseconds(500);
   }
 }

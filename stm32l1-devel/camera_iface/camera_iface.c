@@ -45,8 +45,9 @@ static const GPTConfig gpt3cfg = {
 //Configuration addresses and bytes ensure CONFIG_PAIRS reflects the number
 //of configuration pairs needed!
 #define CONFIG_PAIRS 9
+//30FPS YUV:  Y U Y V Y U Y V....
 static const uint8_t cam_config[CONFIG_PAIRS][2] = {
-  {CAM_CLKRC, 0x40},
+  {CAM_CLKRC, 0x01},
   {CAM_COM7, 0x00},
   {CAM_COM3, 0x00},
   {CAM_COM14, 0x00},
@@ -54,9 +55,10 @@ static const uint8_t cam_config[CONFIG_PAIRS][2] = {
   {CAM_SCALING_YSC, 0x35},
   {CAM_SCALING_DCWCTR, 0x11},
   {CAM_SCALING_PCK_DIV, 0xF0},
-  {CAM_SCALING_PCK_DELAY, 0xA2}
+  {CAM_SCALING_PCK_DELAY, 0x02}
 };
 
+uint8_t pixelData[640*2];
 
 //Setup the SCCB controller
 void setupSCCB(void){
@@ -340,9 +342,13 @@ void setupCamPort(void){
   palSetPadMode(FIFO_DATA_PORT, FIFO_D6, PAL_MODE_INPUT);
   palSetPadMode(FIFO_DATA_PORT, FIFO_D7, PAL_MODE_INPUT);
   palSetPadMode(FIFO_CTL_PORT, FIFO_WEN, PAL_MODE_OUTPUT_PUSHPULL);
+  palSetPad(FIFO_CTL_PORT, FIFO_WEN);
   palSetPadMode(FIFO_CTL_PORT, FIFO_RRST, PAL_MODE_OUTPUT_PUSHPULL);
+  palSetPad(FIFO_CTL_PORT, FIFO_RRST);
   palSetPadMode(FIFO_CTL_PORT, FIFO_OE, PAL_MODE_OUTPUT_PUSHPULL);
+  palSetPad(FIFO_CTL_PORT, FIFO_OE);
   palSetPadMode(FIFO_CTL_PORT, FIFO_RCLK, PAL_MODE_OUTPUT_PUSHPULL);
+  palSetPad(FIFO_CTL_PORT, FIFO_RCLK);
   return;
 }
 
@@ -387,20 +393,100 @@ void powerdownCam(){
   palSetPad(CAM_PORT, CAM_PWDN);
 }
 
+msg_t setupSegment( uint8_t segment )
+{
+  uint16_t vlower = segment; //segment*8;
+  uint16_t vupper = segment; //vlower+7;
+
+  uint8_t vstrt = vlower>>2;
+  uint8_t vstop = vupper>>2;
+  uint8_t vref = 0x00;
+  vref |= (vlower & 0x03);
+  vref |= (vupper & 0x03)<<2;
+
+  //Write our window configuration to the control registers
+  cameraWriteCycle( CAM_VREF, vref );
+  cameraWriteCycle( CAM_VSTART, vstrt );
+  cameraWriteCycle( CAM_VSTOP, vstop );
+
+  //Verify write operations were successful
+  vlower = cameraReadCycle( CAM_VREF );
+  if( vlower != vref )
+    return -1;
+
+  vlower = cameraReadCycle( CAM_VSTART );
+  if( vlower != vstrt )
+    return -1;
+
+  vlower = cameraReadCycle( CAM_VSTOP );
+  if( vlower != vstop )
+    return -1;
+
+  return RDY_OK;
+}
+ 
+
+void fifoGrabBytes( uint8_t *buf, uint32_t n ){
+
+  uint8_t dataByte = 0;
+  while( n > 0 ){
+    dataByte = 0;
+    palClearPad( FIFO_CTL_PORT, FIFO_RCLK );
+    gptPolledDelay(&GPTD3,CLK_DELAY);
+    palSetPad( FIFO_CTL_PORT, FIFO_RCLK );
+    gptPolledDelay(&GPTD3,CLK_DELAY);
+    //TODO: Final version turn this into necessary code
+    dataByte |= (palReadPort( FIFO_DATA_PORT ) & 0x0F);
+    dataByte |= (palReadPort( FIFO_DATA_PORT ) & 0x3B0)>>2;
+    *buf = dataByte;
+    buf++;
+    n--;
+  }
+}
+
+static void resetReadPointer(void){
+  palClearPad( FIFO_CTL_PORT, FIFO_RRST );
+  palSetPad( FIFO_CTL_PORT, FIFO_RCLK );
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  palClearPad( FIFO_CTL_PORT, FIFO_RCLK );
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  palSetPad( FIFO_CTL_PORT, FIFO_RCLK );
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  palClearPad( FIFO_CTL_PORT,FIFO_RCLK );
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  palSetPad( FIFO_CTL_PORT,FIFO_RCLK );
+}
+
+
 msg_t cameraControlThread(void* arg){
   chprintf((BaseChannel *)&SD1, "Beginning camera control thread\r\n");
   setupSCCB();
   setupCamPort();
-  while(TRUE){
-    //chprintf((BaseChannel *)&SD1, "Inside camera thread\r\n");
+
+  uint8_t segmentNumber = 0x00;
+  while(TRUE){ 
     chThdSleepMilliseconds(2000);
     prepareTimer();
     msg_t success = configureCam();
-    chprintf((BaseChannel *)&SD1, "Camera config status: %d\r\n", success);
     if( success == RDY_OK ){
        chprintf((BaseChannel *)&SD1, "Config TX OK\r\n");
     }else{
       chprintf((BaseChannel *)&SD1, "Unknown state returned\r\n");
+    }
+    for( segmentNumber; segmentNumber < 480; segmentNumber++ ){
+      success = setupSegment( segmentNumber );
+      palClearPad( FIFO_CTL_PORT, FIFO_OE );
+      resetReadPointer();
+      palClearPad( FIFO_CTL_PORT, FIFO_WEN );
+      chSysLockFromIsr();
+      while( !palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
+      while( palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
+      while( !palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
+      palSetPad( FIFO_CTL_PORT, FIFO_WEN );
+      chSysUnlockFromIsr();
+      fifoGrabBytes( pixelData, 640*2 );
+      chprintf((BaseChannel *)&SD1, "\r\nSegment %d Next Line:\r\n)", segmentNumber );
+      sdWrite( &SD1, pixelData, 640*2 );
     }
     deactivateTimer(); 
   }
