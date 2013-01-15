@@ -300,7 +300,6 @@ static uint8_t cameraReadCycle( uint8_t reg ){
   stopCondition();
 
   idleState();
-  //gptPolledDelay(&GPTD3,CLK_DELAY);
 
   //Two phase read
   startCondition();
