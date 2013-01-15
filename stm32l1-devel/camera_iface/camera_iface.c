@@ -39,7 +39,7 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #define CLK_DELAY 640
 static const GPTConfig gpt3cfg = {
   32000000,    /* 32MHz timer clock.*/
-  NULL    /* Timer callback.*/
+  NULL         /* Timer callback.*/
 };
 
 //Configuration addresses and bytes ensure CONFIG_PAIRS reflects the number
@@ -312,6 +312,8 @@ static uint8_t cameraReadCycle( uint8_t reg ){
 //Write reg <= value using the three-phase transmission cycle in the SCCB
 //datasheet
 static void cameraWriteCycle( uint8_t reg, uint8_t value ){
+  
+  //Three phase write
   startCondition();
   writeByte(CAM_ADDR_W);
   writeByte(reg);
