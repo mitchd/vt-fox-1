@@ -16,11 +16,7 @@ by VTARA.
 All of the source code within this project is copyright (2012, 2013):
 
 Joseph "Mitch" Davis, WQ3C, mitchd@vt.edu
-<<<<<<< HEAD
-Kevin Burns, KJ4SYL, kevinpd@vt.edu
-=======
 Kevin Burns, KJ4SYL, kevinpb@vt.edu
->>>>>>> camera_inwork
 Virginia Polytechnic Institute and State University
 
 This entire project is licensed under the GNU Public License (GPL) Version 3:
