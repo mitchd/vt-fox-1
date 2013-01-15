@@ -35,11 +35,28 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 */
 #include "camera_iface.h"
 
+//Timer Configurationfor bus communications
 #define CLK_DELAY 640
 static const GPTConfig gpt3cfg = {
   32000000,    /* 32MHz timer clock.*/
   NULL    /* Timer callback.*/
 };
+
+//Configuration addresses and bytes ensure CONFIG_PAIRS reflects the number
+//of configuration pairs needed!
+#define CONFIG_PAIRS 9
+static const uint8_t cam_config[CONFIG_PAIRS][2] = {
+  {CAM_CLKRC, 0x40},
+  {CAM_COM7, 0x00},
+  {CAM_COM3, 0x00},
+  {CAM_COM14, 0x00},
+  {CAM_SCALING_XSC, 0x3A},
+  {CAM_SCALING_YSC, 0x35},
+  {CAM_SCALING_DCWCTR, 0x11},
+  {CAM_SCALING_PCK_DIV, 0xF0},
+  {CAM_SCALING_PCK_DELAY, 0xA2}
+};
+
 
 //Setup the SCCB controller
 void setupSCCB(void){
@@ -327,73 +344,45 @@ void setupCamPort(void){
   return;
 }
 
+//Check camera sanity
+msg_t checkCameraSanity(void){
+  uint8_t rxbyte;
+  uint8_t tmp;
+  //Verify Programming
+  for( tmp = 0; tmp < CONFIG_PAIRS; tmp++ ){
+    rxbyte = cameraReadCycle( cam_config[tmp][0] );
+    chprintf((BaseChannel *)&SD1, "ADDR: %x VAL: %x\r\n", cam_config[tmp][0], rxbyte );
+    if( rxbyte != cam_config[tmp][1] )
+      return -1;
+  }
+
+  return RDY_OK;
+}
+
+
 //Configure the camera
 msg_t configureCam(void){
-  uint8_t rxbyte;
+  uint8_t tmp;
   idleState();
   //Poweron the camera
   wakeupCam();
   
   //Configure the camera
-  cameraWriteCycle( CAM_CLKRC, 0x40 );
-  cameraWriteCycle( CAM_COM7, 0x00 );
-  cameraWriteCycle( CAM_COM3, 0x00 );
-  cameraWriteCycle( CAM_COM14, 0x00 );
-  cameraWriteCycle( CAM_SCALING_XSC, 0x3A );
-  cameraWriteCycle( CAM_SCALING_YSC, 0x35 );
-  cameraWriteCycle( CAM_SCALING_DCWCTR, 0x11 );
-  cameraWriteCycle( CAM_SCALING_PCK_DIV, 0xF0 );
-  cameraWriteCycle( CAM_SCALING_PCK_DELAY, 0xA2 );
+  for( tmp = 0; tmp < CONFIG_PAIRS; tmp++ )
+    cameraWriteCycle( cam_config[tmp][0], cam_config[tmp][1] );
 
-  //Verify Programming
-  rxbyte = cameraReadCycle( 0x0A );
-  chprintf((BaseChannel *)&SD1, "Manufacturer ID %x\r\n", rxbyte );
-  if( rxbyte != 0x76 )
-    return -1;
-  rxbyte = cameraReadCycle( CAM_CLKRC );
-  chprintf((BaseChannel *)&SD1, "CAM_CLKRC %x\r\n",rxbyte );
-  if( rxbyte != 0x40 )
-    return -1;
-  rxbyte = cameraReadCycle( CAM_COM7 );
-  chprintf((BaseChannel *)&SD1, "CAM_COM7 %x\r\n",rxbyte );
-  if( rxbyte != 0x00 )
-    return -1;
-  rxbyte = cameraReadCycle( CAM_COM14 );
-  chprintf((BaseChannel *)&SD1, "CAM_COM14 %x\r\n",rxbyte );
-  if( rxbyte != 0x00 )
-    return -1;
-  rxbyte = cameraReadCycle( CAM_SCALING_XSC );
-  chprintf((BaseChannel *)&SD1, "CAM_SCALING_XSC %x\r\n",rxbyte );
-  if( rxbyte != 0x3A )
-    return -1;
-  rxbyte = cameraReadCycle( CAM_SCALING_YSC );
-  chprintf((BaseChannel *)&SD1, "CAM_SCALING_YSC %x\r\n",rxbyte );
-  if( rxbyte != 0x35 )
-    return -1;
-  rxbyte = cameraReadCycle( CAM_SCALING_DCWCTR );
-  chprintf((BaseChannel *)&SD1, "CAM_SCALING_DCWCTR %x\r\n",rxbyte );
-  if( rxbyte != 0x11 )
-    return -1;
-  rxbyte = cameraReadCycle( CAM_SCALING_PCK_DIV );
-  chprintf((BaseChannel *)&SD1, "CAM_SCALING_PCK_DIV %x\r\n",rxbyte );
-  if( rxbyte != 0xF0 )
-    return -1;
-  rxbyte = cameraReadCycle( CAM_SCALING_PCK_DELAY );
-  chprintf((BaseChannel *)&SD1, "CAM_SCALING_PCK_DELAY %x\r\n",rxbyte );
-  if( rxbyte != 0xA2 )
-    return -1;
-
+  tmp = checkCameraSanity();
   powerdownCam();
-  return RDY_OK;
+  return (msg_t)tmp;
     
 }
 
 void wakeupCam(){
-  //palClearPad(CAM_PORT, CAM_PWDN);
+  palClearPad(CAM_PORT, CAM_PWDN);
 }
 
 void powerdownCam(){
-  //palSetPad(CAM_PORT, CAM_PWDN);
+  palSetPad(CAM_PORT, CAM_PWDN);
 }
 
 msg_t cameraControlThread(void* arg){

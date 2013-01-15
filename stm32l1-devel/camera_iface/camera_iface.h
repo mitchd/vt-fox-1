@@ -253,7 +253,7 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 void	setupSCCB(void);
 
 //Setup the Camera and FIFO control lines
-/*
+/* TODO:  When moving to release board, change these pin descriptions
  * Configure the I/O pads for communicating with the camera:
  *   PA1  - ~RESET to camera
  *   PA2  - PWDN to camera
@@ -283,8 +283,24 @@ void    setupCamPort(void);
  *   0x72 0x11
  *   0x73 0xF0
  *   0xA2 0x02
+ *
+ * In addition to setting the registers, the function performs a readback test.
+ * msg_t RDY_OK is returned if the camera successfully retained its settings,
+ * otherwise -1 is returned.
  */
 msg_t	configureCam(void);
+
+//Check camera sanity
+/*
+ *Prior to checking the camera sanity, it must be configured and powered on
+ *
+ * This function just queries the camera's configuration registers to ensure it
+ * is still configured the way we want it
+ *
+ * RDY_OK = Camera good to go
+ * -1 = Something is wrong
+ */
+msg_t	checkCameraSanity(void);
 
 //Camera utility functions
 /*
