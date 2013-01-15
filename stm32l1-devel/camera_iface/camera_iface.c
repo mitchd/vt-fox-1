@@ -16,7 +16,7 @@ by VTARA.
 All of the source code within this project is copyright (2012, 2013):
 
 Joseph "Mitch" Davis, WQ3C, mitchd@vt.edu
-Kevin Burns, KJ4SYL, kevinpd@vt.edu
+Kevin Burns, KJ4SYL, kevinpb@vt.edu
 Virginia Polytechnic Institute and State University
 
 This entire project is licensed under the GNU Public License (GPL) Version 3:
@@ -37,9 +37,9 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 */
 #include "camera_iface.h"
 
-#define CLK_DELAY 5
+#define CLK_DELAY 640
 static const GPTConfig gpt3cfg = {
-  1000000,    /* 32MHz timer clock.*/
+  32000000,    /* 32MHz timer clock.*/
   NULL    /* Timer callback.*/
 };
 //5 ticks = 100kHz bus timing
@@ -50,7 +50,7 @@ void setupSCCB(void){
   palSetPadMode(CAM_CTL_PORT, CAM_SCL, PAL_MODE_OUTPUT_PUSHPULL |
                                        PAL_STM32_OSPEED_LOWEST );
   //SDA
-  palSetPadMode(CAM_CTL_PORT, CAM_SDA, PAL_MODE_OUTPUT_OPENDRAIN |
+  palSetPadMode(CAM_CTL_PORT, CAM_SDA, PAL_MODE_OUTPUT_PUSHPULL |
                                        PAL_STM32_OSPEED_LOWEST );
 }
 
@@ -69,12 +69,19 @@ static void deactivateTimer(void){
 //Initiate SCCB start condition -- requires the timer
 static void startCondition(void){
   chSysLockFromIsr();
+
+  //Pull SDA SCL High
   palWritePad(CAM_CTL_PORT, CAM_SDA, 1);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  //Wait
   gptPolledDelay(&GPTD3,CLK_DELAY);
+  //Data Low
   palWritePad(CAM_CTL_PORT, CAM_SDA, 0);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  //Clock Low
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
   gptPolledDelay(&GPTD3,CLK_DELAY);
+
   chSysUnlockFromIsr();
   return;
 }
@@ -82,11 +89,19 @@ static void startCondition(void){
 //Release the SCCB -- requires the timer
 static void stopCondition(void){
   chSysLockFromIsr();
+  
+  //Pull SDA Low
   palWritePad(CAM_CTL_PORT, CAM_SDA, 0);
+  //Set SCL Low
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+
   gptPolledDelay(&GPTD3,CLK_DELAY);
+  //SCL High
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  palWritePad(CAM_CTL_PORT, CAM_SDA, 1);
   gptPolledDelay(&GPTD3,CLK_DELAY);
+  //SDA High
+  palWritePad(CAM_CTL_PORT, CAM_SDA, 1);
+
   chSysLockFromIsr();
   return;
 }
@@ -100,8 +115,10 @@ static void idleState(void){
  
 //Write a byte, MSB first, with don't-care at the end -- requires the timer
 static void writeByte(uint8_t byte){
+
   chSysLockFromIsr();
   //MSB Bit 7
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
   palWritePad(CAM_CTL_PORT, CAM_SDA, (byte & 0x80)>>7);
   gptPolledDelay(&GPTD3,CLK_DELAY);
@@ -163,15 +180,115 @@ static void writeByte(uint8_t byte){
   gptPolledDelay(&GPTD3,CLK_DELAY);
   //Deassert don't care
   palSetPadMode(CAM_CTL_PORT, CAM_SDA, PAL_MODE_INPUT );
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  
+  chSysUnlockFromIsr();
+  //Re-assert the SDA
+  palSetPadMode(CAM_CTL_PORT, CAM_SDA, PAL_MODE_OUTPUT_PUSHPULL |
+                                       PAL_STM32_OSPEED_LOWEST );
+  //Done with byte
+  return;
+}
+
+static uint8_t readByte(void){ 
+  chSysLockFromIsr();
+  
+  //Configure input pad 
+  uint8_t byte = 0;
+  palSetPadMode(CAM_CTL_PORT, CAM_SDA, PAL_MODE_INPUT );
+  
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+
+  //MSB Bit 7
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<7;
+
+  //Bit 6
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<6;
+
+  //Bit 5
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<5;
+
+  //Bit 4
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<4;
+
+  //Bit 3
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<3;
+
+  //Bit 2
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<2;
+
+  //Bit 1
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<1;
+
+  //Bit 0
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
+  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) );
+
+  //9th Don't Care Byte
+  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
+  //Dive to 1 per datasheet
+  palSetPadMode(CAM_CTL_PORT, CAM_SDA, PAL_MODE_OUTPUT_PUSHPULL |
+                                       PAL_STM32_OSPEED_LOWEST );
+  palWritePad(CAM_CTL_PORT, CAM_SDA, 1);  
   gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
   gptPolledDelay(&GPTD3,CLK_DELAY);
   chSysUnlockFromIsr();
-  //Re-assert the SDA
-  palSetPadMode(CAM_CTL_PORT, CAM_SDA, PAL_MODE_OUTPUT_OPENDRAIN |
-                                       PAL_STM32_OSPEED_LOWEST );
-  //Done with byte
-  return;
+  return byte;
+}
+//Read reg => retval using two-phase write and read cycle -- requires the timer
+static uint8_t cameraReadCycle( uint8_t reg ){
+  
+  uint8_t byte;
+
+  //Two phase write
+  startCondition();
+  writeByte(CAM_ADDR_W);
+  writeByte(reg);
+  stopCondition();
+
+  idleState();
+  //gptPolledDelay(&GPTD3,CLK_DELAY);
+
+  //Two phase read
+  startCondition();
+  writeByte(CAM_ADDR_R);
+  byte = readByte();
+  stopCondition();
+
+  return byte;
 }
 
 //Write reg <= value using the three-phase transmission cycle in the SCCB
@@ -185,99 +302,6 @@ static void cameraWriteCycle( uint8_t reg, uint8_t value ){
   return;
 }
 
-static uint8_t readByte(void){ 
-  chSysLockFromIsr();
-  //Configure input pad 
-  uint8_t byte = 0;
-  palSetPadMode(CAM_CTL_PORT, CAM_SDA, PAL_MODE_INPUT );
-
-  //MSB Bit 7
-  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
-  gptPolledDelay(&GPTD3,CLK_DELAY);
-  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<7;
-  gptPolledDelay(&GPTD3,CLK_DELAY);
-
-  //Bit 6
-  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
-  gptPolledDelay(&GPTD3,CLK_DELAY);
-  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<6;
-  gptPolledDelay(&GPTD3,CLK_DELAY);
-
-  //Bit 5
-  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
-  gptPolledDelay(&GPTD3,CLK_DELAY);
-  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<5;
-  gptPolledDelay(&GPTD3,CLK_DELAY);
-
-  //Bit 4
-  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
-  gptPolledDelay(&GPTD3,CLK_DELAY);
-  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<4;
-  gptPolledDelay(&GPTD3,CLK_DELAY);
-
-  //Bit 3
-  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
-  gptPolledDelay(&GPTD3,CLK_DELAY);
-  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<3;
-  gptPolledDelay(&GPTD3,CLK_DELAY);
-
-  //Bit 2
-  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
-  gptPolledDelay(&GPTD3,CLK_DELAY);
-  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<2;
-  gptPolledDelay(&GPTD3,CLK_DELAY);
-
-  //Bit 1
-  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
-  gptPolledDelay(&GPTD3,CLK_DELAY);
-  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<1;
-  gptPolledDelay(&GPTD3,CLK_DELAY);
-
-  //Bit 0
-  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
-  gptPolledDelay(&GPTD3,CLK_DELAY);
-  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) );
-  gptPolledDelay(&GPTD3,CLK_DELAY);
-
-  //9th Don't Care Byte
-  palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
-  //Dive to 1 per datasheet
-  palSetPadMode(CAM_CTL_PORT, CAM_SDA, PAL_MODE_OUTPUT_OPENDRAIN |
-                                       PAL_STM32_OSPEED_LOWEST );
-  palWritePad(CAM_CTL_PORT, CAM_SDA, 1);  
-  gptPolledDelay(&GPTD3,CLK_DELAY);
-  palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  gptPolledDelay(&GPTD3,CLK_DELAY);
-  chSysUnlockFromIsr();
-  return byte;
-}
-//Read reg => retval using two-phase write and read cycle -- requires the timer
-static uint8_t cameraReadCycle( uint8_t reg ){
-  
-  uint8_t byte;
-  
-  startCondition();
-  
-  writeByte(CAM_ADDR_W);
-  writeByte(reg);
-  
-  startCondition();
-  
-  writeByte(CAM_ADDR_R);
-  gptPolledDelay(&GPTD3,CLK_DELAY);
-  byte = readByte();
-  
-  stopCondition();
-  return byte;
-}
 //Configure the camera pads
 void setupCamPort(void){
   palSetPadMode(CAM_PORT, CAM_XCLK, PAL_MODE_ALTERNATE(0) | 
@@ -308,9 +332,57 @@ msg_t configureCam(void){
   //Poweron the camera
   wakeupCam();
   
-  //cameraWriteCycle( CAM_CLKRC, 0x40 );
-  //cameraWriteCycle( CAM_COM7, 0x00 );
+  //Configure the camera
+  cameraWriteCycle( CAM_CLKRC, 0x40 );
+  cameraWriteCycle( CAM_COM7, 0x00 );
+  cameraWriteCycle( CAM_COM3, 0x00 );
+  cameraWriteCycle( CAM_COM14, 0x00 );
+  cameraWriteCycle( CAM_SCALING_XSC, 0x3A );
+  cameraWriteCycle( CAM_SCALING_YSC, 0x35 );
+  cameraWriteCycle( CAM_SCALING_DCWCTR, 0x11 );
+  cameraWriteCycle( CAM_SCALING_PCK_DIV, 0xF0 );
+  cameraWriteCycle( CAM_SCALING_PCK_DELAY, 0xA2 );
+
+  //Verify Programming
   rxbyte = cameraReadCycle( 0x0A );
+  chprintf((BaseChannel *)&SD1, "Manufacturer ID %x\r\n", rxbyte );
+  if( rxbyte != 0x76 )
+    return -1;
+  rxbyte = cameraReadCycle( CAM_CLKRC );
+  chprintf((BaseChannel *)&SD1, "CAM_CLKRC %x\r\n",rxbyte );
+  if( rxbyte != 0x40 )
+    return -1;
+  rxbyte = cameraReadCycle( CAM_COM7 );
+  chprintf((BaseChannel *)&SD1, "CAM_COM7 %x\r\n",rxbyte );
+  if( rxbyte != 0x00 )
+    return -1;
+  rxbyte = cameraReadCycle( CAM_COM14 );
+  chprintf((BaseChannel *)&SD1, "CAM_COM14 %x\r\n",rxbyte );
+  if( rxbyte != 0x00 )
+    return -1;
+  rxbyte = cameraReadCycle( CAM_SCALING_XSC );
+  chprintf((BaseChannel *)&SD1, "CAM_SCALING_XSC %x\r\n",rxbyte );
+  if( rxbyte != 0x3A )
+    return -1;
+  rxbyte = cameraReadCycle( CAM_SCALING_YSC );
+  chprintf((BaseChannel *)&SD1, "CAM_SCALING_YSC %x\r\n",rxbyte );
+  if( rxbyte != 0x35 )
+    return -1;
+  rxbyte = cameraReadCycle( CAM_SCALING_DCWCTR );
+  chprintf((BaseChannel *)&SD1, "CAM_SCALING_DCWCTR %x\r\n",rxbyte );
+  if( rxbyte != 0x11 )
+    return -1;
+  rxbyte = cameraReadCycle( CAM_SCALING_PCK_DIV );
+  chprintf((BaseChannel *)&SD1, "CAM_SCALING_PCK_DIV %x\r\n",rxbyte );
+  if( rxbyte != 0xF0 )
+    return -1;
+  rxbyte = cameraReadCycle( CAM_SCALING_PCK_DELAY );
+  chprintf((BaseChannel *)&SD1, "CAM_SCALING_PCK_DELAY %x\r\n",rxbyte );
+  if( rxbyte != 0xA2 )
+    return -1;
+
+  return RDY_OK;
+    
 /*
   uint8_t tx_buf[32];
   uint8_t rx_buf[4];
