@@ -47,7 +47,7 @@
 #define STM32_HSI_ENABLED                   TRUE
 #define STM32_LSI_ENABLED                   FALSE
 #define STM32_HSE_ENABLED                   FALSE
-#define STM32_LSE_ENABLED                   TRUE
+#define STM32_LSE_ENABLED                   FALSE
 #define STM32_ADC_CLOCK_ENABLED             FALSE
 #define STM32_USB_CLOCK_ENABLED             FALSE
 #define STM32_MSIRANGE                      STM32_MSIRANGE_2M
@@ -104,7 +104,7 @@
  */
 #define STM32_GPT_USE_TIM1                  FALSE
 #define STM32_GPT_USE_TIM2                  FALSE
-#define STM32_GPT_USE_TIM3                  FALSE
+#define STM32_GPT_USE_TIM3                  TRUE
 #define STM32_GPT_USE_TIM4                  FALSE
 #define STM32_GPT_USE_TIM5                  FALSE
 #define STM32_GPT_USE_TIM8                  FALSE
@@ -199,3 +199,13 @@
 #define STM32_USB_LOW_POWER_ON_SUSPEND      FALSE
 #define STM32_USB_USB1_HP_IRQ_PRIORITY      6
 #define STM32_USB_USB1_LP_IRQ_PRIORITY      14
+
+/*
+ *  * I2C driver system settings.
+ *   */
+#define STM32_I2C_USE_I2C1                  FALSE
+//#define STM32_I2C_I2C1_RX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 0)
+//#define STM32_I2C_I2C1_TX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 6)
+#define STM32_I2C_I2C1_IRQ_PRIORITY         6
+#define STM32_I2C_I2C1_DMA_PRIORITY         1
+#define STM32_I2C_I2C1_DMA_ERROR_HOOK()     chSysHalt()

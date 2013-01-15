@@ -1,38 +1,49 @@
 /*
-    ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+This file is part of The Virginia Tech Amateur Radio Association's AMSAT FOX-1
+experiment.
 
-    This file is part of ChibiOS/RT.
+There are two main projects from which this code derives:
 
-    ChibiOS/RT is free software; you can redistribute it and/or modify
+ChibiOS/RT 2.4.3
+jpegant
+
+ChibiOS/RT is unmodified, and retains its source structure in ./os/
+
+jpegant is modified from its original version, and best efforts are made to
+annotate the differences between the released jpegant and the contributions made
+by VTARA.
+
+All of the source code within this project is copyright (2012, 2013):
+
+Joseph "Mitch" Davis, WQ3C, mitchd@vt.edu
+Kevin Burns, KJ4SYL, kevinpb@vt.edu
+Virginia Polytechnic Institute and State University
+
+This entire project is licensed under the GNU Public License (GPL) Version 3:
+
+
+    This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
+    the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    ChibiOS/RT is distributed in the hope that it will be useful,
+    This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-                                      ---
-
-    A special exception to the GPL can be applied should you wish to distribute
-    a combined work that includes ChibiOS/RT, without being obliged to provide
-    the source code for any proprietary components. See the file exception.txt
-    for full details of how and when the exception can be applied.
 */
-
 #include "ch.h"
 #include "hal.h"
 #include "uart_iface.h"
 #include "spi_flash.h"
+#include "camera_iface.h"
 #include "chprintf.h"
 
 WORKING_AREA(waUART_Thread, 512);
-
+WORKING_AREA(waCamera_Thread, 5120+128);
 
 /*
  * Application entry point.
@@ -72,6 +83,9 @@ int main(void) {
                     UART_Thread,NULL);
 
   configureSPIFlash();
+
+  chThdCreateStatic(waCamera_Thread, sizeof(waCamera_Thread), NORMALPRIO,
+                    cameraControlThread,NULL);
   /*
    * Normal main() thread activity, in this demo it does nothing except
    * sleeping in a loop and check the button state, when the button is
@@ -79,7 +93,7 @@ int main(void) {
    * driver 2.
    */
   while (TRUE) {
-    chprintf((BaseChannel *)&SD1, "Inside main() thread\r\n");
+//    chprintf((BaseChannel *)&SD1, "Inside main() thread\r\n");
     chThdSleepMilliseconds(500);
   }
 }
