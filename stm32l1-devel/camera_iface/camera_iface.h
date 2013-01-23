@@ -42,6 +42,7 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #include "ch.h"
 #include "hal.h"
 #include "chprintf.h"
+#include "encoder.h"
 
 #define _CAMERA_IFACE_
 
@@ -210,14 +211,14 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #define FIFO_D7		9
 //Development Interface
 #define CAM_PORT2	GPIOA
-#define CAM_VSYNC_OUT	0
+#define CAM_VSYNC_OUT	4
 #define CAM_HREF_OUT	3
 //Development Interface
-#define FIFO_CTL_PORT	GPIOB
-#define FIFO_WEN	12
-#define FIFO_RRST	13
-#define FIFO_OE		14
-#define FIFO_RCLK	15
+#define FIFO_CTL_PORT	GPIOC
+#define FIFO_WEN	10
+#define FIFO_RRST	11
+#define FIFO_OE		14 //Permanent Hardware Ground
+#define FIFO_RCLK	12
 
 /*This is the release configuration
 #define CAM_PORT2	GPIOF//2nd camera control port
@@ -336,7 +337,7 @@ void	fifoGrabBytes( uint8_t *buf, uint32_t n );
 msg_t	setupSegment( uint8_t segment );
 
 //Camera control thread -- Needs just a little bit of memory
-extern  WORKING_AREA(waCamera_Thread, 1280+256);
+extern  WORKING_AREA(waCamera_Thread, 10240+1024);
 /*
  * This is where the magic happens.  There are two phases of operation for this
  * thread:

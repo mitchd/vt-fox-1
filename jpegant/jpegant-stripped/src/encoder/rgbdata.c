@@ -52,3 +52,19 @@ bool load_rgb( char *filename, RGB **mmap_addr )
 
 	return true;
 }
+
+color getRed( RGB values ){
+  color red = (values.A & 0xF8);
+  return red;
+}
+
+color getBlue( RGB values ){
+  color blue = (values.B & 0x1F)<<3;
+  return blue;
+}
+
+color getGreen( RGB values ){
+  color green = (values.A & 0x07) << 5;
+  green |= (values.B & 0xE0) >> 5;
+  return green;
+}

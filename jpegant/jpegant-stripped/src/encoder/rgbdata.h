@@ -35,9 +35,8 @@ typedef unsigned char color;
 
 
 typedef struct {
-	color Red;
-	color Green;
-	color Blue;
+        color A;
+        color B;
 } RGB;
 
 /*
@@ -46,6 +45,9 @@ typedef struct {
 
 #ifdef __X86
 
+color getRed( RGB values );
+color getBlue( RGB values );
+color getGreen( RGB values );
 /*
  * Load the specified filename into a memory map, pointed at by mmap_addr
  *

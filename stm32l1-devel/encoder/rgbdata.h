@@ -17,25 +17,19 @@
 
 
 #include <stdint.h>
-#include <stdbool.h>
-
-#ifdef __X86
-#include <sys/mman.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#endif
 
 /*
  * Define our image sizes here
  */
-#define IMG_WIDTH 640
+#define IMG_WIDTH 640 
 #define IMG_HEIGHT 480
 
 typedef uint8_t color;
 
 
 typedef struct {
-	color Red;
-	color Green;
-	color Blue;
+        color A;
+        color B;
 } RGB;
+
+

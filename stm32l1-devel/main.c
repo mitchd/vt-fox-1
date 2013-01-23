@@ -37,13 +37,13 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 */
 #include "ch.h"
 #include "hal.h"
-#include "uart_iface.h"
-#include "spi_flash.h"
+//#include "uart_iface.h"
+//#include "spi_flash.h"
 #include "camera_iface.h"
 #include "chprintf.h"
 
-WORKING_AREA(waUART_Thread, 512);
-WORKING_AREA(waCamera_Thread, 1280+256);
+//WORKING_AREA(waUART_Thread, 512);
+WORKING_AREA(waCamera_Thread, 10240+1024);
 
 /*
  * Application entry point.
@@ -64,9 +64,9 @@ int main(void) {
    * Activates the serial driver 3.
    * PB10(TX) and PB11(RX) are routed to USART3.
    */
-  sdStart(&SD3, NULL);
-  palSetPadMode(GPIOB, 10, PAL_MODE_ALTERNATE(7));
-  palSetPadMode(GPIOB, 11, PAL_MODE_ALTERNATE(7));
+  //sdStart(&SD3, NULL);
+  //palSetPadMode(GPIOB, 10, PAL_MODE_ALTERNATE(7));
+  //palSetPadMode(GPIOB, 11, PAL_MODE_ALTERNATE(7));
 
   /* Activate serial driver 1 for debug
    *  PA9 (TX) and PA10(RX)
@@ -79,12 +79,12 @@ int main(void) {
   /*
    * Create our UART thread
    */
-  chThdCreateStatic(waUART_Thread, sizeof(waUART_Thread), NORMALPRIO,
-                    UART_Thread,NULL);
+  //chThdCreateStatic(waUART_Thread, sizeof(waUART_Thread), NORMALPRIO,
+  //                  UART_Thread,NULL);
 
   //configureSPIFlash();
 
-  chThdCreateStatic(waCamera_Thread, sizeof(waCamera_Thread), NORMALPRIO,
+  chThdCreateStatic(waCamera_Thread, sizeof(waCamera_Thread), HIGHPRIO,
                     cameraControlThread,NULL);
   /*
    * Normal main() thread activity, in this demo it does nothing except

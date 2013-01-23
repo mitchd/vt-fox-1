@@ -1,0 +1,71 @@
+
+Jpegant - JPEG encoder for embedded applications
+------------------------------------------------
+
+First of all I want to give credit to giants on wich shoulders I stood and
+borrowed some ideas and code from:
+
+- Santosh for his article about DCT, www.geocities.com/ssavekar, ssavekar@yahoo.com;
+- Emil Mikulic for DCT code, dmr.ath.cx;
+- Cristi Cuturicu for his JPEG codec code;
+- Embedded JPEG Codec Library for inspiration and an example of how a code should
+  not be written :), sourceforge.net/projects/mb-jpeg;
+
+JPEG file decoding utility 'JPEGsnoop' was wery usefull,
+www.impulseadventure.com/photo/jpeg-snoop.html
+
+
+The goal
+--------
+
+To create JPEG encoder that is able to work in microcontrollers/microprocessors.
+It should be very fast and its code/data should be small. The image quality is
+important too but is not my main concern. No floating point numbers of course.
+
+
+Implementation
+--------------
+Encoder is written in C, if you see C++ code it should be a support code for
+some paltform/architecture.
+
+Encoder is in 'encoder' directory and consists of files:
+dct.c, dct.h			- Discrete Cosine Transform DCT;
+jpegenc.c, jpegenc.h	- Quantization, Huffman lossless coding and JFIF;
+arch.h					- Architecture specific defines;
+
+This code has a decoder too (see 'decoder' directory). It has an auxiliary
+function - to decode a bitstream produced by the encoder. Although it is written
+in C and is much like the encoder it is a host tool - was never intended to
+be run in embedded devices and uses floating point IDCT (at least for now)
+and has a weak bitstream error checking.
+
+The JPEG code itself does not depend on any libraries, SDKs, OS calls.
+The resulting JPEG stream is flushed via callback function
+	write_jpeg(const unsigned char buff[], const unsigned size)
+which the application should create to save the data any way it likes.
+
+For example this code saves jpeg stream into a file:
+
+static int file_jpg = 0; // POSIX file handler
+
+void write_jpeg(const unsigned char buff[], const unsigned size)
+{
+	write(file_jpg, buff, size);
+}
+
+File bitmap.h contains C++ class for BMP format reading/writing. It is
+not a part of JPEG codec I use it to read image source in OS dependent
+code. It supports only so called true color pixel format - 24-bit RGB.
+
+Supported OS-es
+---------------
+
+At present this code compiles and runs on Linux (Makefile is provided)
+and Windows (VC9 projects). It is not difficult to port this code to any
+architecture, the only concern may be size of int type - I asume that it
+is 32 bit long. The code that depends on int size is bit-buffer and DCT -
+it needs 32 bit accululator register to work correctly.
+
+
+Regards,
+Vladimir Antonenko

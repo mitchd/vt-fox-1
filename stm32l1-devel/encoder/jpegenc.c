@@ -309,17 +309,18 @@ static short quantize(const short data, const unsigned short qt)
 ******************************************************************************/
 
 // code-stream output counter
-static unsigned jpgn = 0;
+static uint16_t jpgn = 0;
 // code-stream output buffer, adjust its size if you need
-static uint8_t jpgbuff[256];
+#define JPG_BUF_SIZE 256
+static uint8_t jpgbuff[JPG_BUF_SIZE];
 
 static void writebyte(const uint8_t b)
 {
 	jpgbuff[jpgn++] = b;
 
-	if (jpgn == sizeof(jpgbuff)) {
+	if (jpgn == JPG_BUF_SIZE) {
 		jpgn = 0;
-		write_jpeg(jpgbuff, sizeof(jpgbuff));
+		write_jpeg(jpgbuff, JPG_BUF_SIZE);
 	}
 }
 
