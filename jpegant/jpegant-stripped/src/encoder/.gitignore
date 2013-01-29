@@ -1,0 +1,5 @@
+# ignore all auto-generated files (objects,
+# assembly, programs)
+*.o
+*.s
+jpegant
