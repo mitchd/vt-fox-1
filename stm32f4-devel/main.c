@@ -28,6 +28,7 @@
 #include "ch.h"
 #include "hal.h"
 #include "uart_iface.h"
+#include "camera_iface.h"
 #include "spi_flash.h"
 #include "chprintf.h"
 
@@ -51,6 +52,7 @@ static msg_t Thread1(void *arg) {
 
 WORKING_AREA(waUART_Thread, 256);
 WORKING_AREA(waCamera_Thread, 10240+128);
+//WORKING_AREA(waUART_Thread, 256);
 
 /*
  * Application entry point.
@@ -78,23 +80,46 @@ int main(void) {
   /*
    * Creates the example thread.
    */
-  chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, Thread1, NULL);
-
+  //chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, Thread1, NULL);
+ 
+  /*
+   * Creates the Dummy Camera Thread.
+   */
+  chThdCreateStatic(waCamera_Thread, sizeof(waCamera_Thread), NORMALPRIO, Camera_Thread, NULL);
+  
+  /*
+   * Creates the Dummy UART Thread.
+   */
+  chThdCreateStatic(waUART_Thread, sizeof(waUART_Thread), HIGHPRIO, UART_Thread, NULL);
+  
   /*
    * Create our UART thread
    */
-  chThdCreateStatic(waUART_Thread, sizeof(waUART_Thread), NORMALPRIO,
-                    UART_Thread,NULL);
+  //chThdCreateStatic(waUART_Thread, sizeof(waUART_Thread), NORMALPRIO, UART_Thread,NULL);
 
-  configureSPIFlash();
+  //configureSPIFlash();
   /*
    * Normal main() thread activity, in this demo it does nothing except
    * sleeping in a loop and check the button state, when the button is
    * pressed the test procedure is launched with output on the serial
    * driver 2.
    */
-  while (TRUE) {
-//    chprintf((BaseChannel *)&SD3, "Inside main() thread\r\n");
-    chThdSleepMilliseconds(500);
+
+  /* TODO
+   *
+   * This is where main() will listen for events from uart_iface and foward them to where they need to go
+   */
+  EventListener main_events_li;
+  
+  const eventmask_t myEvents =  WAKE_CAMERA_THREAD; 
+
+  chEvtRegisterMask( &(SD3.event), &main_events_li, myEvents );
+
+  //Test Case for sending an event to wake up the camera thread
+/*  while (TRUE) {
+    chprintf((BaseChannel *)&SD3, "Inside main() thread\r\n");
+    chThdSleepMilliseconds(5000); 
+    chSchReadyI(waCamera_Thread);
   }
+*/
 }

@@ -1,6 +1,5 @@
 #include "camera_iface.h"
 
-
 //I2C#1 Configuration stuff
 static const I2CConfig i2cfg1 = {
   OPMODE_I2C,
@@ -91,3 +90,45 @@ void wakeupCam(){
 void powerdownCam(){
   palSetPad(CAM_PORT, CAM_PWDN);
 }
+
+msg_t Camera_Thread(void* arg) {
+  (void)arg;
+  
+  /* TODO 
+   * migrate the wake event into the camera_events and myCamera_events
+   */
+
+  //Pulled from uart_iface.c, is used for serial comms
+  //Register this as an event listener for events from SD3
+  //EventListener serial_events;
+  //Events received from the serial device
+  //const eventmask_t myCamera_events = IO_INPUT_AVAILABLE | 
+  //                                 SD_OVERRUN_ERROR | 
+  //                                 IO_OUTPUT_EMPTY;
+  //chEvtRegisterMask( &(SD3.event), &serial_events, myUART_events );
+
+  //Make our read buffer the same size as the buffer used with the serial device 
+  uint8_t read_buffer[COMMAND_SIZE];
+  //
+  //Keep track of our current communication state with myUART_state
+  //This should be transformed to a global, signal, something....
+  //uint8_t myUART_state = UART_COMM_IDLE;
+  //recorded events
+  eventmask_t events;
+
+  //NOTE: this is an older version of configureCam and hangs the code, I am using it as a placeholder
+  //Powers on the camera, configures it, powers down the camera
+  //configureCam();             
+  chprintf((BaseChannel*)&SD3, "(CT) Camera configured and powerd off\n");
+
+  //This is a test, the camera sleeps and waits for the event to wake it up
+  while (TRUE) {
+      chprintf((BaseChannel*)&SD3, "(CT) Time for Camera Thread to Sleep\n");
+      chSchGoSleepS(THD_STATE_SUSPENDED);
+
+      chprintf((BaseChannel*)&SD3, "(CT) Camera Thread has awoken\n");
+  }
+
+
+}
+

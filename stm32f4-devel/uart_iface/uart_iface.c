@@ -20,7 +20,7 @@ static void showMenu(void){
   chprintf((BaseChannel*)&SD3, "(2) Read Byte from SPI Flash\r\n");
   chprintf((BaseChannel*)&SD3, "(3) Write Bytes to SPI Flash\r\n");
   chprintf((BaseChannel*)&SD3, "(4) Read Bytes from SPI Flash\r\n");
-  chprintf((BaseChannel*)&SD3, "(5) Write a  to SPI Flash\r\n");
+  chprintf((BaseChannel*)&SD3, "(5) Wake up the Camera Thread\r\n");
   return;
 }
 static void showWriteBytePrompt(void){
@@ -38,6 +38,9 @@ static void showWriteBytesPrompt(void){
 static void showReadBytesPrompt(void){
   chprintf((BaseChannel*)&SD3, "\r\nReading from 0x000000, enter number of bytes:\r\n");
   chprintf((BaseChannel*)&SD3, " :>");
+}
+static void showCommandSentPrompt(void){
+  chprintf((BaseChannel*)&SD3, "\r\nCommand Sent\r\n");
 }
 #endif
 /*
@@ -212,6 +215,9 @@ msg_t UART_Thread(void* arg){
               }else if( option == '4' ){
                 myUART_state = UART_TX_RGB;
                 showReadBytesPrompt();
+              }else if( option == '5' ){
+                myUART_state = UART_WAKE_CAMERA;
+                showSentCommandPrompt();
               }else
                 showMenu();
            }else{
@@ -347,6 +353,11 @@ msg_t UART_Thread(void* arg){
                input_pos++;
            }
          
+         }else if( myUART_state == UART_WAKE_CAMERA ){
+            chprintf((BaseChannel *)&SD3, "Debug: Sending Wake Command to Camera Thread\r\n");
+            //TODO convert this to an event to main
+            //chSchReadyI(waCamera_Thread);
+
          }
        }
     }

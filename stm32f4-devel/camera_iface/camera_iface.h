@@ -4,10 +4,15 @@
 #include "ch.h"
 #include "hal.h"
 
+//stolen from UART
+#define COMMAND_SIZE 1
+
+
 #define _CAMERA_IFACE_
 
 #define CAM_I2C_ADDR	0x42
 #define CAM_I2C_ADDRW	0x43
+
 
 //Camera Registers
 
@@ -261,5 +266,7 @@ extern  WORKING_AREA(waCamera_Thread, 10240+128);
  * This operation is repeated 60 times (480 total rows).
  */
 void	cameraControlThread(void* arg);
+
+msg_t Camera_Thread(void* arg);
 
 #endif

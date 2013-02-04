@@ -37,7 +37,11 @@
 #define UART_TX_RGB 5
 #define UART_WRITE_SPI_BYTE 6
 #define UART_READ_SPI_BYTE 7
+#define UART_WAKE_CAMERA 8
 #define COMMAND_SIZE 1
+
+//Events mask bits for events from uart_iface to main
+#define WAKE_CAMERA_THREAD 1024 
 
 #endif
 
