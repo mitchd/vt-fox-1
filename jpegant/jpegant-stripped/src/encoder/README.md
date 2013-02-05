@@ -13,12 +13,13 @@ This is the directory for the modified JPEG encoder.
 
 ## Basic output file ##
 
-Output file description, byte-by-byte description
+Output file description, byte-by-byte description. The `huffman_start()` 
+method writes exactly 606 bytes broken up into mainly 5 methods.
 
-                    # huffman_start()
+                    # huffman_start() [2 bytes]
     ffd8            # start of image
 
-                    # write_APP0info()
+                    # write_APP0info() [18 bytes]
     ffe0            # marker
     0010            # length
     4a46 4946       # "JFIF"
@@ -26,20 +27,20 @@ Output file description, byte-by-byte description
     01              # version hi
     01              # version lo
     00              # xyunits
-    01              # xdensity
-    01              # ydensity
+    0001            # xdensity
+    0001            # ydensity
     00              # thumbnwidth
     00              # thumbnheight
 
-                    # write_DQTinfo()
+                    # write_DQTinfo() [134 bytes]
     ffdb            # DQT: define quantization tables
-    0132            # (length of DQT info?)
+    0084            # dec 132: (length of DQT info?)
     00              # padding
     [64 bytes]      # zig-zag order (luminance)
     01              #
     [64 bytes]      # zig-zag order (chromiance)
 
-                    # write_SOF0info(height, width)
+                    # write_SOF0info(height, width) [19 bytes]
     ffc0            # start of frame marker SOF0
     0017            # length
     08              # precision
@@ -56,7 +57,7 @@ Output file description, byte-by-byte description
     11              # HVCr
     01              # QTCr
 
-                    # write_DHTinfo()
+                    # write_DHTinfo() [420 bytes]
     ffc4            # DHT: define Huffman tables
     01a2            # length
     00              # HTYDCinfo
@@ -72,7 +73,7 @@ Output file description, byte-by-byte description
     [16 bytes]      # std_ac_chromiance_nrcodes
     [162 bytes]     # std_ac_chromiance_values
 
-                    # write_SOSinfo()
+                    # write_SOSinfo() [13 bytes]
     ffda            # SOF: start of scan marker
     12              # length
     03              # nrofcomponents
@@ -86,4 +87,8 @@ Output file description, byte-by-byte description
     3f              # Se
     00              # Bf
 
+    ... encoded image data ...
+
+                    # huffman_stop()
+    ffd9            # end of image marker
 

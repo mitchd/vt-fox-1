@@ -17,12 +17,21 @@ $(OBJECTS): %.o: %.c
 # is '0xABCD' is written as '0xCDAB')
 check: jpegant image.rgb
 	./$< image.rgb test.jpg
-	echo 'huffman_start():'
-	od -x -N2 -w32 test.jpg
-	echo 'write_APP0info():'
-	od -x -N16 -j2 -w32 test.jpg
-	echo 'write_DQTinfo():'
-	od -x -N134 -j18 -w32 test.jpg
+	@echo ':: huffman_start() ::'
+	@od -x -j0    -N2    -w32 test.jpg
+	@echo ':: write_APP0info() ::'
+	@od -x -j2    -N18   -w32 test.jpg
+	@echo ':: write_DQTinfo() ::'
+	@od -x -j20   -N134  -w32 test.jpg
+	@echo ':: write_SOF0info(w,h) ::'
+	@od -x -j154  -N19   -w32 test.jpg
+	@echo ':: write_DHTinfo() ::'
+	@od -x -j173  -N420  -w32 test.jpg
+	@echo ':: write_SOSinfo() ::'
+	@od -x -j593  -N13   -w32 test.jpg
+	@echo ':: start of compressed data ::'
+	@od -x -j606  -N8    -w32 test.jpg
+
 clean:
 	rm -f $(OBJECTS) jpegant *.s
 	rm -f test.jpg
