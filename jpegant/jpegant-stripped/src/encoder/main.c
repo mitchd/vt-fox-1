@@ -34,15 +34,15 @@ inline color RGB2Cr(const color r, const color g, const color b)
 // chroma subsampling, i.e. converting a 16x16 RGB block into 8x8 Cb and Cr
 void subsample(RGB rgb[8][16], short cb[8][8], short cr[8][8])
 {
-	color red,blue,green;	
+	RGB pixel;
 	for (unsigned r = 0; r < 8; r++)
 	for (unsigned c = 0; c < 8; c++)
 	{
-		red = (getRed(rgb[r][2*c])+getRed(rgb[r][2*c+1]))/2;
-		green = (getGreen(rgb[r][2*c])+getGreen(rgb[r][2*c+1]))/2;
-		blue = (getBlue(rgb[r][2*c])+getBlue(rgb[r][2*c+1]))/2;
-		cb[r][c] = (short)RGB2Cb( red, green, blue )-128;
-		cr[r][c] = (short)RGB2Cr( red, green, blue )-128;
+		pixel.Red = (rgb[r][2*c].Red+rgb[r][2*c+1].Red)/2;
+		pixel.Green = (rgb[r][2*c].Green+rgb[r][2*c+1].Green)/2;
+		pixel.Blue = (rgb[r][2*c].Blue+rgb[r][2*c+1].Blue)/2;
+		cb[r][c] = (short)RGB2Cb( pixel.Red, pixel.Green, pixel.Blue )-128;
+		cr[r][c] = (short)RGB2Cr( pixel.Red, pixel.Green, pixel.Blue )-128;
 	}
 }
 
@@ -90,14 +90,14 @@ int main (int argc, char *argv[])
 			for (unsigned r = 0; r < 8; r++)
 			for (unsigned c = 0; c < 8; c++)
 			{
-				color R = getRed(RGB8x16[r][c]);
-				color G = getGreen(RGB8x16[r][c]);
-				color B = getBlue(RGB8x16[r][c]);
+				color R = RGB8x16[r][c].Red;
+				color G = RGB8x16[r][c].Green;
+				color B = RGB8x16[r][c].Blue;
 				// converting RGB into Y (luminance)
 				Y8x8[0][r][c] = RGB2Y(R, G, B)-128;
-				R = getRed(RGB8x16[r][c+8]);
-				G = getGreen(RGB8x16[r][c+8]);
-				B = getBlue(RGB8x16[r][c+8]);
+				R = RGB8x16[r][c+8].Red;
+				G = RGB8x16[r][c+8].Green;
+				B = RGB8x16[r][c+8].Blue;
 				// converting RGB into Y (luminance)
 				Y8x8[1][r][c] = RGB2Y(R, G, B)-128;
 			}
