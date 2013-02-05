@@ -3,3 +3,6 @@
 *.o
 *.s
 jpegant
+
+# ignore auto-generated .jpg files
+test.jpg
