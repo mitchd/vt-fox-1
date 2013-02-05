@@ -4,6 +4,12 @@ jpegant : jpeg image encoder with modifications
 
 This is the directory for the modified JPEG encoder.
 
+## Restart intervals ##
+
+Useful documentation on determining how to enable restart intervals can 
+be found in Annex B.2 of 
+[JPEG ISO/IEC 10918-1 ITU-T Recommendation T.81][http://www.w3.org/Graphics/JPEG/itu-t81.pdf]
+
 ## code questions ##
 
   * main.c/35: the "subsample()" method indicates a 16x16 RGB block; 
