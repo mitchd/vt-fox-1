@@ -11,12 +11,13 @@ $(OBJECTS): %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
                   
 
-# check program output by compressing 'image.rgb' and then
+# check program output by compressing a raw RGB image and then
 # writing the first 64 bytes of the resulting image the screen
 # (note that each word stores results with bytes flipped, that
 # is '0xABCD' is written as '0xCDAB')
-check: jpegant image.rgb
-	./$< image.rgb test.jpg
+test_image := jpeg_spacetest/640x480_test.rgb
+check: jpegant $(test_image)
+	./$< $(test_image) test.jpg
 	@echo ':: huffman_start() ::'
 	@od -x -j0    -N2    -w32 test.jpg
 	@echo ':: write_APP0info() ::'
