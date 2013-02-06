@@ -1,6 +1,9 @@
 #include "jpegenc.h"
 #include <unistd.h>
 
+// enable restart interval
+#define ENABLE_RSI  0
+
 #define QTAB_SCALE 10	
 
 // as you can see I use Paint tables
@@ -432,6 +435,24 @@ static void write_DHTinfo(void)
 		writebyte(std_ac_chrominance_values[i]);
 }
 
+
+//  write_DRIinfo()
+//
+//  Writes "Define Restart Interval" spacing and defines the interval
+//  between RSTn markers in macroblocks
+static void write_DRIinfo(void)
+{
+	unsigned i;
+	
+	writeword(0xFFDD); // marker
+
+    // specify restart interval markers every 80 blocks
+    // (640 bits per line is 80 blocks per line)
+    // FIXME: determine just how big a macroblock is and what
+    //        the decoder is expecting here
+	writeword(80);
+}
+
 /******************************************************************************
 **  writebits
 **  --------------------------------------------------------------------------
@@ -545,6 +566,9 @@ void huffman_start(short height, short width)
 	write_DQTinfo();
 	write_SOF0info(height, width);
 	write_DHTinfo();
+#if ENABLE_RSI
+    write_DRIinfo();    // set restart interval length
+#endif
 	write_SOSinfo();
 
 	huffman_ctx[2].dc = 
@@ -627,3 +651,20 @@ void huffman_encode(huffman_t *const ctx, const short data[])
 		writebits(&bitbuf, ctx->hacbit[0][0], ctx->haclen[0][0]);
 	}
 }
+
+// write re-start interval
+void write_RSIn(unsigned int _n)
+{
+    // ensure that _n < 8
+    _n %= 8;
+
+#if ENABLE_RSI
+    // flush buffer (?)
+	//flushbits(&bitbuf);
+
+    // write bits to buffer
+    writebyte(0xFF);
+    writebyte(0xD0 | _n);
+#endif
+}
+
