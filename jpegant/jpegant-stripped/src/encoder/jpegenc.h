@@ -32,5 +32,10 @@ void huffman_start(short height, short width);
 void huffman_stop(void);
 void huffman_encode(huffman_t *const ctx, const short data[64]);
 
+// write re-start interval
+void write_RSIn(unsigned int _n);
+
+// write re-start interval termination character
+void write_RSIterm();
 
 #endif//__JPEG_H__

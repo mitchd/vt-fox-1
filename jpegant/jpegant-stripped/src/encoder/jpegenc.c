@@ -1,5 +1,9 @@
 #include "jpegenc.h"
 #include <unistd.h>
+#include <stdio.h>
+
+// enable restart interval
+#define ENABLE_RSI  1
 
 #define QTAB_SCALE 10	
 
@@ -432,6 +436,20 @@ static void write_DHTinfo(void)
 		writebyte(std_ac_chrominance_values[i]);
 }
 
+
+//  write_DRIinfo()
+//
+//  Writes "Define Restart Interval" spacing and defines the interval
+//  between RSTn markers in macroblocks
+static void write_DRIinfo(void)
+{
+	writeword(0xFFDD);  // write DRI (define restart interval) marker
+    writeword(4);       // DRI Lr segment length (4 bytes total)
+	writeword(40);      // restart interval is 40 MCUs (each MCU is 16
+                        // pixels wide, which for an image 640 pixels
+                        // wide is 640/16 = 40 MCUs
+}
+
 /******************************************************************************
 **  writebits
 **  --------------------------------------------------------------------------
@@ -545,12 +563,31 @@ void huffman_start(short height, short width)
 	write_DQTinfo();
 	write_SOF0info(height, width);
 	write_DHTinfo();
+#if ENABLE_RSI
+	write_DRIinfo();    // set restart interval length
+#endif
 	write_SOSinfo();
 
+#if ENABLE_RSI
+    // reset DC predctors accomplished every restart interval
+#else
+	huffman_ctx[2].dc = 
+	huffman_ctx[1].dc = 
+	huffman_ctx[0].dc = 0;
+#endif
+}
+
+//
+// huffman_resetdc()
+//
+// reset DC predictors for Huffman encoding
+void huffman_resetdc()
+{
 	huffman_ctx[2].dc = 
 	huffman_ctx[1].dc = 
 	huffman_ctx[0].dc = 0;
 }
+
 
 /******************************************************************************
 **  huffman_stop
@@ -627,3 +664,22 @@ void huffman_encode(huffman_t *const ctx, const short data[])
 		writebits(&bitbuf, ctx->hacbit[0][0], ctx->haclen[0][0]);
 	}
 }
+
+// write re-start interval
+void write_RSIn(unsigned int _n)
+{
+    // ensure that _n < 8
+    _n %= 8;
+
+#if ENABLE_RSI
+    // flush buffer
+    flushbits(&bitbuf);
+
+    // write marker with 3-bit restart interval counter
+    writeword(0xFFD0 | _n);
+    
+    // reset block-to-block predictors (DC values, etc.)
+    huffman_resetdc();
+#endif
+}
+
