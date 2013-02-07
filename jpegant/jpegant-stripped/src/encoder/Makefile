@@ -30,11 +30,11 @@ check: jpegant $(test_image)
 	@echo ':: write_DHTinfo() ::'      >> test.out
 	@od -x -j173  -N420  -w32 test.jpg >> test.out
 	@echo ':: write_DRIinfo() ::'      >> test.out
-	@od -x -j593  -N4    -w32 test.jpg >> test.out
+	@od -x -j593  -N6    -w32 test.jpg >> test.out
 	@echo ':: write_SOSinfo() ::'      >> test.out
-	@od -x -j597  -N14   -w32 test.jpg >> test.out
+	@od -x -j598  -N14   -w32 test.jpg >> test.out
 	@echo ':: start of compressed data ::' >> test.out
-	@od -x -j611  -N8    -w32 test.jpg >> test.out
+	@od -x -j612  -N8    -w32 test.jpg >> test.out
 
 clean:
 	rm -f $(OBJECTS) jpegant *.s

@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 // enable restart interval
-#define ENABLE_RSI  0
+#define ENABLE_RSI  1
 
 #define QTAB_SCALE 10	
 
@@ -443,13 +443,11 @@ static void write_DHTinfo(void)
 //  between RSTn markers in macroblocks
 static void write_DRIinfo(void)
 {
-	writeword(0xFFDD); // marker
-
-    // specify restart interval markers every 80 blocks
-    // (640 bits per line is 80 blocks per line)
-    // FIXME: determine just how big a macroblock is and what
-    //        the decoder is expecting here
-	writeword(80);
+	writeword(0xFFDD);  // write DRI (define restart interval) marker
+    writeword(4);       // DRI Lr segment length (4 bytes total)
+	writeword(40);      // restart interval is 40 MCUs (each MCU is 16
+                        // pixels wide, which for an image 640 pixels
+                        // wide is 640/16 = 40 MCUs
 }
 
 /******************************************************************************
@@ -673,17 +671,13 @@ void write_RSIn(unsigned int _n)
     // ensure that _n < 8
     _n %= 8;
 
-    // debug
-    printf("write_RSIn(%u)\n", _n);
-
 #if ENABLE_RSI
-    // write bits to buffer
-    writebyte(0xFF);
-    writebyte(0xD0 | _n);
-    
-    // flush buffer (?)
-    //flushbits(&bitbuf);
+    // flush buffer
+    flushbits(&bitbuf);
 
+    // write marker with 3-bit restart interval counter
+    writeword(0xFFD0 | _n);
+    
     // reset block-to-block predictors (DC values, etc.)
     huffman_resetdc();
 #endif
