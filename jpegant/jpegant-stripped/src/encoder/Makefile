@@ -42,4 +42,4 @@ check: jpegant $(test_image) corruptor
 
 clean:
 	rm -f $(OBJECTS) jpegant *.s
-	rm -f test.jpg corrupt.jpg
+	rm -f test.out test.jpg corrupt.jpg

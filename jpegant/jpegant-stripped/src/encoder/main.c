@@ -78,7 +78,6 @@ int main (int argc, char *argv[])
 	// which Huffman encoder uses to flush its output, so this file
 	// should be opened before the call of huffman_start().
 	huffman_start(IMG_HEIGHT & -8, IMG_WIDTH & -8);
-    unsigned int RSIn = 0;  // restart interval counter (TODO: make this global?)
 	for (unsigned y = 0; y < IMG_HEIGHT; y += 8) {
 
 		for (unsigned x = 0; x < IMG_WIDTH; x += 16)
@@ -121,8 +120,8 @@ int main (int argc, char *argv[])
 			huffman_encode(HUFFMAN_CTX_Cr, (short*)Cr8x8);
 		}
         
-        // write restart interval termination and update counter
-        write_RSIn(RSIn++ % 8);
+        // write restart interval termination character
+        write_RSI();
 	}
 
 	huffman_stop();

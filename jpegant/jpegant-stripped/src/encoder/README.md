@@ -2,20 +2,24 @@
 jpegant : jpeg image encoder with modifications
 -----------------------------------------------
 
-This is the directory for the modified JPEG encoder.
+This is the directory for the modified .jpeg encoder to incorporate the
+restart interval to recover corrupted .jpeg files. Included is the
+program to compress a raw RGB image file into a .jpeg using restart
+intervals to preserve image integrity.
+
+To build the program, run `make` on command line. Additionally, run
+`make check` to compress a test image file, and generate a corrupted
+version. Both the test image (`test.jpg`) and the corrupted image
+(`corrupt.jpg`) should be able to be decoded with any compliant .jpeg
+viewer such as eye of Gnome; however the corrupted version should have
+distinct artifacts. An octal dump of the header is provided in
+`test.out` for further analysis.
 
 ## Restart intervals ##
 
 Useful documentation on determining how to enable restart intervals can 
 be found in Annex B.2 of 
 [JPEG ISO/IEC 10918-1 ITU-T Recommendation T.81][http://www.w3.org/Graphics/JPEG/itu-t81.pdf]
-
-## code questions ##
-
-  * main.c/35: the "subsample()" method indicates a 16x16 RGB block; 
-    however the input RGB array is 8x16
-  * main.c/64: comment claims four 8x8 blocks, but code indicates that 
-    there are just two
 
 ## Basic output file ##
 
@@ -79,6 +83,11 @@ method writes exactly 606 bytes broken up into mainly 5 methods.
     [16 bytes]      # std_ac_chromiance_nrcodes
     [162 bytes]     # std_ac_chromiance_values
 
+                    # write_DRIinfo() [6 bytes], see B.2.4.4 in [1]
+    ffdd            # Define restart interval (DRI)
+    0004            # length of this block (always 4)
+    0028            # decimal 40 (set restart interval to 40 MCUs)
+
                     # write_SOSinfo() [14 bytes]
     ffda            # SOF: start of scan marker
     000c            # length (decimal 12)
@@ -93,7 +102,8 @@ method writes exactly 606 bytes broken up into mainly 5 methods.
     3f              # Se
     00              # Bf
 
-    ... encoded image data ...
+    ... encoded image data with periodic 0xFFDn markers
+        to indicate restart intervals ...
 
                     # huffman_stop()
     ffd9            # end of image marker

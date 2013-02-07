@@ -2,9 +2,6 @@
 #include <unistd.h>
 #include <stdio.h>
 
-// enable restart interval
-#define ENABLE_RSI  1
-
 #define QTAB_SCALE 10	
 
 // as you can see I use Paint tables
@@ -276,6 +273,8 @@ typedef struct bitbuffer_s
 bitbuffer_t;
 
 static bitbuffer_t bitbuf;
+
+static unsigned int RSI;    // restart interval
 
 
 /******************************************************************************
@@ -563,24 +562,20 @@ void huffman_start(short height, short width)
 	write_DQTinfo();
 	write_SOF0info(height, width);
 	write_DHTinfo();
-#if ENABLE_RSI
 	write_DRIinfo();    // set restart interval length
-#endif
 	write_SOSinfo();
 
-#if ENABLE_RSI
-    // reset DC predctors accomplished every restart interval
-#else
 	huffman_ctx[2].dc = 
 	huffman_ctx[1].dc = 
 	huffman_ctx[0].dc = 0;
-#endif
+
+    RSI = 0;
 }
 
 //
 // huffman_resetdc()
 //
-// reset DC predictors for Huffman encoding
+// reset DC predictors for Huffman encoding (needed every restart interval)
 void huffman_resetdc()
 {
 	huffman_ctx[2].dc = 
@@ -665,21 +660,19 @@ void huffman_encode(huffman_t *const ctx, const short data[])
 	}
 }
 
-// write re-start interval
-void write_RSIn(unsigned int _n)
+// write re-start interval termination character
+void write_RSI()
 {
-    // ensure that _n < 8
-    _n %= 8;
-
-#if ENABLE_RSI
     // flush buffer
     flushbits(&bitbuf);
 
     // write marker with 3-bit restart interval counter
-    writeword(0xFFD0 | _n);
+    writeword(0xFFD0 | RSI);
     
     // reset block-to-block predictors (DC values, etc.)
     huffman_resetdc();
-#endif
+    
+    // update restart interval and limit to just 3 bits (0..7)
+    RSI = (RSI + 1) % 8;
 }
 
