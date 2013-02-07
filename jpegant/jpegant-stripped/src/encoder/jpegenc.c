@@ -443,8 +443,6 @@ static void write_DHTinfo(void)
 //  between RSTn markers in macroblocks
 static void write_DRIinfo(void)
 {
-	unsigned i;
-	
 	writeword(0xFFDD); // marker
 
     // specify restart interval markers every 80 blocks
