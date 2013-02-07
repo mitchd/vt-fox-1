@@ -80,6 +80,10 @@ int main (int argc, char *argv[])
 	huffman_start(IMG_HEIGHT & -8, IMG_WIDTH & -8);
     unsigned int RSIn = 0;  // restart interval counter
 	for (unsigned y = 0; y < IMG_HEIGHT; y += 8) {
+
+        // write restart interval and update counter
+        write_RSIn(RSIn++ % 8);
+
 		for (unsigned x = 0; x < IMG_WIDTH; x += 16)
 		{
 			if (!rgb_get_block(x, y, 16, 8, (RGB*)RGB8x16,
@@ -87,10 +91,6 @@ int main (int argc, char *argv[])
 				printf("Error: getBlock(%d,%d)\n", x, y);
 				break;
 			}
-
-            // write restart interval and update counter
-            write_RSIn(RSIn);
-            RSIn = (RSIn + 1) % 8;
 
 			for (unsigned r = 0; r < 8; r++)
 			for (unsigned c = 0; c < 8; c++)
@@ -124,6 +124,8 @@ int main (int argc, char *argv[])
 			huffman_encode(HUFFMAN_CTX_Cr, (short*)Cr8x8);
 		}
 	}
+    // debug: print total number of restart intervals written
+    printf("total restart intervals: %u\n", RSIn);
 
 	huffman_stop();
 	close(file_jpg);

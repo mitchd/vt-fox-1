@@ -1,5 +1,6 @@
 #include "jpegenc.h"
 #include <unistd.h>
+#include <stdio.h>
 
 // enable restart interval
 #define ENABLE_RSI  0
@@ -567,14 +568,30 @@ void huffman_start(short height, short width)
 	write_SOF0info(height, width);
 	write_DHTinfo();
 #if ENABLE_RSI
-    write_DRIinfo();    // set restart interval length
+	write_DRIinfo();    // set restart interval length
 #endif
 	write_SOSinfo();
 
+#if ENABLE_RSI
+    // reset DC predctors accomplished every restart interval
+#else
+	huffman_ctx[2].dc = 
+	huffman_ctx[1].dc = 
+	huffman_ctx[0].dc = 0;
+#endif
+}
+
+//
+// huffman_resetdc()
+//
+// reset DC predictors for Huffman encoding
+void huffman_resetdc()
+{
 	huffman_ctx[2].dc = 
 	huffman_ctx[1].dc = 
 	huffman_ctx[0].dc = 0;
 }
+
 
 /******************************************************************************
 **  huffman_stop
@@ -658,13 +675,19 @@ void write_RSIn(unsigned int _n)
     // ensure that _n < 8
     _n %= 8;
 
-#if ENABLE_RSI
-    // flush buffer (?)
-	//flushbits(&bitbuf);
+    // debug
+    printf("write_RSIn(%u)\n", _n);
 
+#if ENABLE_RSI
     // write bits to buffer
     writebyte(0xFF);
     writebyte(0xD0 | _n);
+    
+    // flush buffer (?)
+    //flushbits(&bitbuf);
+
+    // reset block-to-block predictors (DC values, etc.)
+    huffman_resetdc();
 #endif
 }
 

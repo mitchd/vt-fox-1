@@ -79,9 +79,9 @@ method writes exactly 606 bytes broken up into mainly 5 methods.
     [16 bytes]      # std_ac_chromiance_nrcodes
     [162 bytes]     # std_ac_chromiance_values
 
-                    # write_SOSinfo() [13 bytes]
+                    # write_SOSinfo() [14 bytes]
     ffda            # SOF: start of scan marker
-    12              # length
+    000c            # length (decimal 12)
     03              # nrofcomponents
     01              # IdY
     00              # HTY
