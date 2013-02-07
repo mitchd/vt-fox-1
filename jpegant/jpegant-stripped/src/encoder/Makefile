@@ -10,14 +10,17 @@ jpegant: $(OBJECTS) main.c
 
 $(OBJECTS): %.o: %.c $(HEADERS)
 	$(CC) -c $(CFLAGS) $< -o $@
-                  
+          
+# build program to corrupt .jpeg image for testing purposes
+corruptor : % : %.c
+	$(CC) -Wall -O2 $< -o $@ -lc
 
 # check program output by compressing a raw RGB image and then
 # writing the first 64 bytes of the resulting image the screen
 # (note that each word stores results with bytes flipped, that
 # is '0xABCD' is written as '0xCDAB')
 test_image := jpeg_spacetest/640x480_test.rgb
-check: jpegant $(test_image)
+check: jpegant $(test_image) corruptor
 	./$< $(test_image) test.jpg
 	@echo ':: huffman_start() ::'      >  test.out
 	@od -x -j0    -N2    -w32 test.jpg >> test.out
@@ -35,7 +38,8 @@ check: jpegant $(test_image)
 	@od -x -j598  -N14   -w32 test.jpg >> test.out
 	@echo ':: start of compressed data ::' >> test.out
 	@od -x -j612  -N8    -w32 test.jpg >> test.out
+	./corruptor test.jpg corrupt.jpg
 
 clean:
 	rm -f $(OBJECTS) jpegant *.s
-	rm -f test.jpg
+	rm -f test.jpg corrupt.jpg
