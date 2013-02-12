@@ -3,6 +3,8 @@
 *.o
 *.s
 jpegant
+corruptor
 
 # ignore auto-generated .jpg files
 test.jpg
+corrupt.jpg
