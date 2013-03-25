@@ -215,9 +215,6 @@ msg_t UART_Thread(void* arg){
               }else if( option == '4' ){
                 myUART_state = UART_TX_RGB;
                 showReadBytesPrompt();
-              }else if( option == '5' ){
-                myUART_state = UART_WAKE_CAMERA;
-                showSentCommandPrompt();
               }else
                 showMenu();
            }else{
