@@ -42,7 +42,7 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 static const SPIConfig spi1cfg = {
   NULL,         //Callback function
   GPIOA,        //NSS Port
-  15,            //NSS Pad
+  4,           //NSS Pad
   0 		//Configuration Register stuff (set bits here to go slow)
 };
 
@@ -69,19 +69,19 @@ void configureSPIFlash(void){
   //Setup the pads
   
   //Configure NSS
-  palSetPad(GPIOA, 15);
-  palSetPadMode( GPIOA, 15, PAL_MODE_OUTPUT_PUSHPULL |
+  palSetPad(GPIOA, 4);
+  palSetPadMode( GPIOA, 4, PAL_MODE_OUTPUT_PUSHPULL |
                            PAL_STM32_OSPEED_HIGHEST );
 
   //Configure SCK
-  palSetPadMode( GPIOB, 3, PAL_MODE_ALTERNATE(5) |
+  palSetPadMode( GPIOA, 5, PAL_MODE_ALTERNATE(5) |
                            PAL_STM32_OSPEED_HIGHEST );
 
   //Configure MISO
-  palSetPadMode( GPIOB, 4, PAL_MODE_ALTERNATE(5) );
+  palSetPadMode( GPIOA, 6, PAL_MODE_ALTERNATE(5) );
 
   //Configure MOSI
-  palSetPadMode( GPIOB, 5, PAL_MODE_ALTERNATE(5) |
+  palSetPadMode( GPIOA, 7, PAL_MODE_ALTERNATE(5) |
                            PAL_STM32_OSPEED_HIGHEST );
 
   //Disable write protection
