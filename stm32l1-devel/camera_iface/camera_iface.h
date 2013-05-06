@@ -199,28 +199,6 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #define CAM_SCL		8    //Clock Line
 #define CAM_SDA		9    //Data Line
 
-//Development Interface
-#define FIFO_DATA_PORT  GPIOC
-#define FIFO_D0		0
-#define FIFO_D1		1
-#define FIFO_D2		2
-#define FIFO_D3		3
-#define FIFO_D4		6
-#define FIFO_D5		7
-#define FIFO_D6		8
-#define FIFO_D7		9
-//Development Interface
-#define CAM_PORT2	GPIOA
-#define CAM_VSYNC_OUT	4
-#define CAM_HREF_OUT	3
-//Development Interface
-#define FIFO_CTL_PORT	GPIOC
-#define FIFO_WEN	10
-#define FIFO_RRST	11
-#define FIFO_OE		14 //Permanent Hardware Ground
-#define FIFO_RCLK	12
-
-/*This is the release configuration
 #define CAM_PORT2	GPIOF//2nd camera control port
 #define CAM_VSYNC_OUT	8    //VSYNC output from camera
 #define CAM_HREF_OUT	9    //HREF output from camera
@@ -240,7 +218,7 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #define FIFO_RRST	1    //Read pointer reset
 #define FIFO_OE		2    //Read output enable
 #define FIFO_RCLK	3    //Read clock
-*/
+
 
 
 //Setup the Camera SCCB
@@ -254,19 +232,8 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 void	setupSCCB(void);
 
 //Setup the Camera and FIFO control lines
-/* TODO:  When moving to release board, change these pin descriptions
- * Configure the I/O pads for communicating with the camera:
- *   PA1  - ~RESET to camera
- *   PA2  - PWDN to camera
- *   PA8  - Clock output to camera
- *   PF8  - VSYNC input from camera
- *   PF9  - HREF input from camera
- *   PF0-7- Data port from FIFO
- *   PC0  - FIFO Write Enable
- *   PC1  - FIFO Read pointer reset
- *   PC2  - FIFO OE
- *   PC3  - FIFO Read clock
- */
+
+
 void    setupCamPort(void);
 
 //Camera configuration
