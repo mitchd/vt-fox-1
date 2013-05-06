@@ -481,7 +481,7 @@ msg_t checkCameraSanity(void){
     rxbyte = cameraReadCycle( cam_config[tmp][0] );
     //chprintf((BaseChannel *)&SD1, "ADDR: %x VAL: %x\r\n", cam_config[tmp][0], rxbyte );
     if( rxbyte != cam_config[tmp][1] ){
-      chprintf((BaseChannel *)&SD1, "ADDR: %x ASSIGNED: %x ACTUAL: %x\r\n",cam_config[tmp][0],cam_config[tmp][1],rxbyte);
+      chprintf((BaseChannel *)&SD3, "ADDR: %x ASSIGNED: %x ACTUAL: %x\r\n",cam_config[tmp][0],cam_config[tmp][1],rxbyte);
       return -1;
     }
   }
@@ -654,7 +654,7 @@ msg_t cameraControlThread(void* arg){
     }
     jpeg_close();
   }else{
-    chprintf((BaseChannel *)&SD1,"SETUP FAILED\r\n");
+    chprintf((BaseChannel *)&SD3,"SETUP FAILED\r\n");
   }
   palSetPad( GPIOB, 7 );
   while(TRUE); 

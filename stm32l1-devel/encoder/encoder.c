@@ -5,7 +5,7 @@
 uint32_t file_addr_ptr = 0;
 
 void write_jpeg(uint8_t* buff, unsigned size){
-  sdWrite( &SD1, buff, size );
+  sdWrite( &SD3, buff, size );
   //flashWriteBytes( file_addr_ptr, buff, size );
   file_addr_ptr += size;
 }

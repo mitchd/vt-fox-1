@@ -35,8 +35,8 @@
 /*
  * Board identifier.
  */
-#define BOARD_ST_STM32L1_DISCOVERY
-#define BOARD_NAME              "ST STM32L1-Discovery"
+#define BOARD_VT_FOX_1
+#define BOARD_NAME              "VT FOX-1"
 
 /*
  * Board frequencies.
@@ -49,7 +49,7 @@
  * Board voltages.
  * Required for performance limits calculation.
  */
-#define STM32_VDD               300
+#define STM32_VDD               270
 
 /*
  * MCU type as defined in the ST header file stm32f4xx.h.
