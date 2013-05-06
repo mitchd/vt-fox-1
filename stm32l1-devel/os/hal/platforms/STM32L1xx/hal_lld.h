@@ -214,7 +214,7 @@
 #define STM32_HAS_GPIOC         TRUE
 #define STM32_HAS_GPIOD         TRUE
 #define STM32_HAS_GPIOE         TRUE
-#define STM32_HAS_GPIOF         FALSE
+#define STM32_HAS_GPIOF         TRUE
 #define STM32_HAS_GPIOG         FALSE
 #define STM32_HAS_GPIOH         TRUE
 #define STM32_HAS_GPIOI         FALSE
