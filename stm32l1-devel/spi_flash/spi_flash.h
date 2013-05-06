@@ -69,6 +69,27 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #include "hal.h"
 #define __SPI_FLASH__
 
+//
+//Line data for each "scan line" in the jpeg image
+//
+typedef struct{
+  uint8_t  line_num;	// 0-79, horizontal line number of the image.  Each line
+			//is 8 pixels tall
+  uint32_t start_addr;  //Start address of the line data
+  uint32_t end_addr;    //End address of the line data
+  uint8_t  chksum;      //8-bit checksum of the line data
+} line_data;
+
+//
+//system_data is written at the beginning of the MRAM memory space
+//
+typedef struct{
+  line_data  line[80];
+} system_data;
+
+#define SYSTEM_DATA_ADDR		0x000000
+#define IMAGE_DATA_START		0x000400
+
 //Opcodes for Everspin MRAM MR25H10 
 #define FLASH_LOW_ADDR			0x000000  
 #define FLASH_HIGH_ADDR			0x100000
