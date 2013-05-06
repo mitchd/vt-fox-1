@@ -63,6 +63,27 @@ static void  checkBusy(void){
   return; //Check for write complete
 }*/
 
+static void flashSleep(void){
+  uint8_t flash_cmd = FLASH_SLEEP;
+  //NSS Low
+  spiSelect( &SPID1 );
+  //Transmit the write enable command
+  spiSend( &SPID1, 1, &flash_cmd );
+  //Send NSS High (execute WEN)
+  spiUnselect( &SPID1 );
+}
+
+static void flashWake(void){
+  uint8_t flash_cmd = FLASH_SLEEP;
+  //NSS Low
+  spiSelect( &SPID1 );
+  //Transmit the write enable command
+  spiSend( &SPID1, 1, &flash_cmd );
+  //Send NSS High (execute WEN)
+  spiUnselect( &SPID1 );
+}
+
+
 void configureSPIFlash(void){
   //Initialize the SPI port
   spiStart(&SPID1, &spi1cfg);
@@ -105,6 +126,7 @@ void configureSPIFlash(void){
   spiUnselect( &SPID1 );
   //Wait until the device is ready before releasing to the program
   //checkBusy();
+  flashSleep();
   spiReleaseBus( &SPID1 );
 }
 
@@ -118,6 +140,7 @@ void flashWriteByte( uint32_t addr, uint8_t data ){
   flash_addr[2] = (addr & 0x000000FF);     //LSB
   //Acquire the SPI device
   spiAcquireBus( &SPID1 );
+  flashWake();
   //Wait until there is no write in progress
   //checkBusy();
   //Set the command
@@ -148,6 +171,7 @@ void flashWriteByte( uint32_t addr, uint8_t data ){
   //Send NSS High (execute WRDI)
   spiUnselect( &SPID1 );
   //Release the bus
+  flashSleep();
   spiReleaseBus( &SPID1 );
 
   return;
@@ -156,7 +180,6 @@ void flashWriteByte( uint32_t addr, uint8_t data ){
 void flashWriteBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   uint8_t flash_addr[3];
   uint8_t flash_cmd;
-  uint32_t tx_bytes = 0;
   //Prevent overflow
   if( n > (FLASH_HIGH_ADDR - addr) || n < 2)
     return;
@@ -166,8 +189,7 @@ void flashWriteBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   flash_addr[2] = (addr & 0x000000FF);     //LSB
   //Acquire the SPI device
   spiAcquireBus( &SPID1 );
-  //Wait until there is no write in progress
-  //checkBusy();
+  flashWake();
   //NSS Low
   spiSelect( &SPID1 );
   //Set the WEN command
@@ -194,6 +216,7 @@ void flashWriteBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   //Send NSS high
   spiUnselect( &SPID1 );
   //Release the bus
+  flashSleep();
   spiReleaseBus( &SPID1 );
   return;
 }
@@ -208,6 +231,7 @@ uint8_t flashReadByte( uint32_t addr ){
   flash_addr[2] = (addr & 0x000000FF);     //LSB
   //Grab the SPI device
   spiAcquireBus( &SPID1 );
+  flashWake();
   flash_cmd = FLASH_READ;
   //Send cmd
   spiSelect( &SPID1 );
@@ -218,6 +242,7 @@ uint8_t flashReadByte( uint32_t addr ){
   spiReceive( &SPID1, 1, &returnByte );
   //Release the device
   spiUnselect( &SPID1 );
+  flashSleep();
   spiReleaseBus( &SPID1 );
 
   return returnByte;
@@ -232,6 +257,7 @@ void flashReadBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   flash_addr[2] = (addr & 0x000000FF);     //LSB
   //Grab the SPI device
   spiAcquireBus( &SPID1 );
+  flashWake();
   //Set high speed read cmd
   flash_cmd = FLASH_READ;
   //Send cmd
@@ -243,6 +269,7 @@ void flashReadBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   spiReceive( &SPID1, n, data );
   //Release the device
   spiUnselect( &SPID1 );
+  flashSleep();
   spiReleaseBus( &SPID1 );
 
   return;
