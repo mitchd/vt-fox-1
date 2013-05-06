@@ -72,9 +72,9 @@ int main(void) {
    *  PC10 (TX) and PC11(RX)
    *
    */
-  //sdStart(&SD4,NULL);
-  //palSetPadMode(GPIOC, 10 , PAL_MODE_ALTERNATE(7));
-  //palSetPadMode(GPIOC, 11, PAL_MODE_ALTERNATE(7));
+  sdStart(&SD4,NULL);
+  palSetPadMode(GPIOC, 10 , PAL_MODE_ALTERNATE(7));
+  palSetPadMode(GPIOC, 11, PAL_MODE_ALTERNATE(7));
   /*
    * Create our UART thread
    */
@@ -93,6 +93,6 @@ int main(void) {
    */
   while (TRUE) {
     chThdSleepMilliseconds(500);
-    chprintf((BaseChannel *)&SD3,"Hello World\r\n");
+    chprintf((BaseChannel *)&SD4,"Hello World\r\n");
   }
 }
