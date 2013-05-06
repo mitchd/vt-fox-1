@@ -69,12 +69,12 @@ int main(void) {
   palSetPadMode(GPIOB, 11, PAL_MODE_ALTERNATE(7));
 
   /* Activate serial driver 4 for debug
-   *  PC10 (TX) and PC11(RX)
+   *  PA9 (TX) and PA10(RX)
    *
    */
-  sdStart(&SD4,NULL);
-  palSetPadMode(GPIOC, 10 , PAL_MODE_ALTERNATE(7));
-  palSetPadMode(GPIOC, 11, PAL_MODE_ALTERNATE(7));
+  sdStart(&SD1,NULL);
+  palSetPadMode(GPIOA, 9 , PAL_MODE_ALTERNATE(7));
+  palSetPadMode(GPIOA, 10, PAL_MODE_ALTERNATE(7));
   /*
    * Create our UART thread
    */
@@ -93,6 +93,6 @@ int main(void) {
    */
   while (TRUE) {
     chThdSleepMilliseconds(500);
-    chprintf((BaseChannel *)&SD4,"Hello World\r\n");
+    chprintf((BaseChannel *)&SD1,"Hello World\r\n");
   }
 }
