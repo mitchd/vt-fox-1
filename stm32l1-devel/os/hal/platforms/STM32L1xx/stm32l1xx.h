@@ -747,6 +747,7 @@ typedef struct
 #define GPIOC_BASE            (AHBPERIPH_BASE + 0x0800)
 #define GPIOD_BASE            (AHBPERIPH_BASE + 0x0C00)
 #define GPIOE_BASE            (AHBPERIPH_BASE + 0x1000)
+#define GPIOF_BASE            (AHBPERIPH_BASE + 0x1800)
 #define GPIOH_BASE            (AHBPERIPH_BASE + 0x1400)
 #define CRC_BASE              (AHBPERIPH_BASE + 0x3000)
 #define RCC_BASE              (AHBPERIPH_BASE + 0x3800)
@@ -819,6 +820,7 @@ typedef struct
 #define GPIOC               ((GPIO_TypeDef *) GPIOC_BASE)
 #define GPIOD               ((GPIO_TypeDef *) GPIOD_BASE)
 #define GPIOE               ((GPIO_TypeDef *) GPIOE_BASE)
+#define GPIOF		    ((GPIO_TypeDef *) GPIOF_BASE)
 #define GPIOH               ((GPIO_TypeDef *) GPIOH_BASE)
 
 #define FLASH               ((FLASH_TypeDef *) FLASH_R_BASE)
