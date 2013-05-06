@@ -80,7 +80,7 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #define FLASH_SLEEP			0xB9  //Sleep mode
 #define FLASH_WAKE			0xAB  //Wake flash
 #define FLASH_WRITE_ENABLE		0x06  //Enable Write Latch
-#define FLASH_WIRTE_DISABLE		0x04  //Disable Write Latch
+#define FLASH_WRITE_DISABLE		0x04  //Disable Write Latch
 //Status Register Values
 #define FLASH_STATUS_WEL		0x02  //1 = device write enabled
 #define FLASH_STATUS_BP0		0x04  //Indicate current level of
