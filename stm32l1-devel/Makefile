@@ -75,7 +75,7 @@ include $(CHIBIOS)/spi_flash/spi_flash.mk
 include $(CHIBIOS)/encoder/encoder.mk
 include $(CHIBIOS)/camera_iface/camera_iface.mk
 # Define linker script file here
-LDSCRIPT= $(PORTLD)/STM32L152xB.ld
+LDSCRIPT= $(PORTLD)/STM32L151xD.ld
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
