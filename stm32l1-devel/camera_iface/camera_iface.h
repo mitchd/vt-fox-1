@@ -41,9 +41,10 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #include "unistd.h"
 #include "ch.h"
 #include "hal.h"
+#include "uart_iface.h"
 #include "chprintf.h"
-#include "encoder.h"
-
+#include "jpegenc.h"
+#include "stdint.h"
 #define _CAMERA_IFACE_
 
 #define CAM_ADDR_W	0x42

@@ -495,7 +495,7 @@ msg_t configureCam(void){
   uint8_t tmp;
   idleState();
   //Poweron the camera
-//  wakeupCam();
+  wakeupCam();
   //Set Default Values
   cameraWriteCycle( CAM_COM7, 0x80 );
   cameraWriteCycle( CAM_CLKRC, 0x80 );
@@ -504,7 +504,7 @@ msg_t configureCam(void){
     cameraWriteCycle( cam_config[tmp][0], cam_config[tmp][1] );
 
   tmp = checkCameraSanity();
-        cameraWriteCycle(0x4f,0x80);
+/*        cameraWriteCycle(0x4f,0x80);
         cameraWriteCycle(0x50,0x80);
         cameraWriteCycle(0x51,0x00);
         cameraWriteCycle(0x52,0x22);
@@ -526,8 +526,8 @@ msg_t configureCam(void){
         cameraWriteCycle(0x6e,0x11);
         cameraWriteCycle(0x6f,0x9f);
 
-        cameraWriteCycle(0xb0,0x84);
-//  powerdownCam();
+        cameraWriteCycle(0xb0,0x84);*/
+  powerdownCam();
   return (msg_t)tmp;
     
 }
@@ -611,19 +611,17 @@ static void resetReadPointer(void){
 
 
 msg_t cameraControlThread(void* arg){
+  const uint16_t IMG_WIDTH = 320;
+  const uint16_t IMG_HEIGHT = 240;
   prepareTimer();
   setupCamPort();
-  palSetPadMode(GPIOB, 7, PAL_MODE_OUTPUT_PUSHPULL);
-  palSetPadMode(GPIOB, 6, PAL_MODE_OUTPUT_PUSHPULL);
-  palClearPad( GPIOB, 7 );
-  palClearPad( GPIOB, 6 );
 
   uint8_t pixelData[IMG_WIDTH*2*8];
   setupSCCB();
 
   uint8_t segmentNumber = 0x00;
   msg_t success = configureCam();
-  if( success == RDY_OK ){  
+/*  if( success == RDY_OK ){  
     //Ensure WEN is disabled
     palClearPad( FIFO_CTL_PORT, FIFO_WEN );
     jpeg_init();
@@ -652,10 +650,11 @@ msg_t cameraControlThread(void* arg){
         }
       }
     }
-    jpeg_close();
+    jpeg_close();*/
+  if( success == RDY_OK ){
+    chprintf(IHU_UART,"SETUP SUCCESS\r\n");
   }else{
-    chprintf((BaseChannel *)&SD3,"SETUP FAILED\r\n");
+    chprintf(IHU_UART,"SETUP FAILED\r\n");
   }
-  palSetPad( GPIOB, 7 );
   while(TRUE); 
 }
