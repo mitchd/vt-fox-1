@@ -1,62 +1,64 @@
-#include "encoder.h"
+#include "stdint.h"
+#include "dct.h"
+#include "jpegenc.h"
+#include "spi_flash.h"
 
-//#include "spi_flash.h"
+// constants specific to 640 x 480 image
+#define IMG_WIDTH   (640)   // image width [pixels]
+#define IMG_HEIGHT  (480)   // image height [pixels]
+#define NUM_LINES   (60)    // number of 8-pixel lines in image
 
 uint32_t file_addr_ptr = 0;
 
-void write_jpeg(uint8_t* buff, unsigned size){
-  sdWrite( &SD3, buff, size );
-  //flashWriteBytes( file_addr_ptr, buff, size );
-  file_addr_ptr += size;
-}
-color getRed( RGB values ){
-  color red = (values.A & 0xF8);
-  return red;
+//void write_jpeg(uint8_t* buff, unsigned size){
+void write_jpeg(const unsigned char buff[], const unsigned size)
+{
+    flashWriteBytes( file_addr_ptr, buff, size );
+    file_addr_ptr += size;
 }
 
-color getBlue( RGB values ){
-  color blue = (values.B & 0x1F)<<3;
-  return blue;
+// initialize jpeg encoder
+void jpeg_init(void)
+{
+    // write the .jpg header
+    // NOTE: this is no longer necessary because the image never
+    //       changes size and the Huffman tables are fixed so there
+    //       is no need to actually send this information with each
+    //       image.
+    //huffman_start(IMG_HEIGHT & -8, IMG_WIDTH & -8);
+
+    // reset the DC values
+    huffman_resetdc();
 }
 
-color getGreen( RGB values ){
-  color green = (values.A & 0x07) << 5;
-  green |= (values.B & 0xE0) >> 5;
-  return green;
+// flush buffer
+void jpeg_close(void)
+{
+    // stop Huffman encoding
+    // NOTE: this flushes the buffer and writes the 'end of image'
+    //       marker; even though the 'huffman_start()' method is
+    //       not called, it is still important to call huffman_stop()
+    huffman_stop();
 }
 
-inline color RGB2Y(const color r, const color g, const color b){
-  return (32768 + 19595*r + 38470*g + 7471*b) >> 16;
-}
-inline color RGB2Cb(const color r, const color g, const color b){
-  return (8421376 - 11058*r - 21709*g + 32767*b) >> 16;
-}
-inline color RGB2Cr(const color r, const color g, const color b){
-  return (8421376 + 32767*r - 27438*g - 5329*b) >> 16;
-}
+// TODO:
+// write yuv_get_line() method and use the following
+// method to encode the line:
+//
+//  encode_line_yuv(line_buffer, line_number);
+//
+// where 'line_buffer' is an array of 10240 bytes and
+// 'line_number' designates which of the 60 image
+// lines is being encoded
+//
+// See 'encoder/test_encoder.c' for details
 
 
-// chroma conversion
-void convert(RGB rgb[8][8], short y[8][8], short cb[8][8], short cr[8][8]){
-  RGB pixel;
-  uint8_t r,c;
-  for (r = 0; r < 8; r++)
-  for (c = 0; c < 8; c++){
-    pixel = rgb[r][c];
-    cb[r][c] = (short)RGB2Cb( getRed(pixel), getGreen(pixel), getBlue(pixel) )-128;
-    cr[r][c] = (short)RGB2Cr( getRed(pixel), getGreen(pixel), getBlue(pixel) )-128;
-    y[r][c] = (short)RGB2Y( getRed(pixel), getGreen(pixel), getBlue(pixel))-128;
-  }
-}
 
-void jpeg_init(void){
-  huffman_start(IMG_HEIGHT & -8, IMG_WIDTH & -8);
-}
-
-void jpeg_close(void){
-  huffman_stop();
-}
-
+// 
+// old methods no longer used
+//
+#if 0
 void rgb_get_block(uint16_t x, RGB *buf, uint8_t *input_buffer){
   uint8_t r;
   uint16_t c, i, offset;
@@ -64,14 +66,15 @@ void rgb_get_block(uint16_t x, RGB *buf, uint8_t *input_buffer){
     offset = r*IMG_WIDTH + x;
     for (c = 0; c < 8; c++) {
       i = offset + c;
-      buf[8*r + c].A = input_buffer[2*i];
-      buf[8*r + c].B = input_buffer[2*i+1];
+      buf[8*r + c].Red = input_buffer[i];
+      buf[8*r + c].Green = input_buffer[i+1];
+      buf[8*r + c].Blue = input_buffer[i+2];
     }
   }
   return;
 }
 
-void convert_rows(uint8_t *input_buffer){
+void convert_rows(uint8_t input_buffer[8][IMG_WIDTH*3]){
   short Y8x8[8][8]; // four 8x8 blocks - 16x16
   short Cb8x8[8][8];
   short Cr8x8[8][8];
@@ -80,6 +83,9 @@ void convert_rows(uint8_t *input_buffer){
   // Process image by 8x8 blocks
   // The resulting image will be truncated on the right/down side
   // if its width/height is not N*8.
+  // The data is written into <file_jpg> file by write_jpeg() function
+  // which Huffman encoder uses to flush its output, so this file
+  // should be opened before the call of huffman_start().
   uint16_t x;
   for (x = 0; x < IMG_WIDTH; x += 8){
     rgb_get_block(x, (RGB*)RGB8x8, (uint8_t*)input_buffer);
@@ -98,3 +104,4 @@ void convert_rows(uint8_t *input_buffer){
   
   return;
 }
+#endif

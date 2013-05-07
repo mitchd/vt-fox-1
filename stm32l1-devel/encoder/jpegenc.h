@@ -3,20 +3,21 @@
 
 #include "stdint.h"
 
-extern int file_jpg;
+// enable VT watermark
+#define ENABLE_WATERMARK (1)
 
 //---------------- J P E G ---------------
 
 // Application should provide this function for JPEG stream flushing
-extern void write_jpeg(uint8_t* buff,unsigned size);
+extern void write_jpeg(const unsigned char buff[], const unsigned size);
 
 typedef struct huffman_s
 {
-	const uint8_t  (*haclen)[12];
+	const unsigned char  (*haclen)[12];
 	const unsigned short (*hacbit)[12];
-	const uint8_t  *hdclen;
+	const unsigned char  *hdclen;
 	const unsigned short *hdcbit;
-	const uint8_t  *qtable;
+	const unsigned char  *qtable;
 	short                dc;
 }
 huffman_t;
@@ -28,8 +29,39 @@ extern huffman_t huffman_ctx[3];
 #define	HUFFMAN_CTX_Cr	&huffman_ctx[2]
 
 void huffman_start(short height, short width);
+void huffman_resetdc(void);
 void huffman_stop(void);
 void huffman_encode(huffman_t *const ctx, const short data[64]);
 
+#ifdef ENABLE_RGB
+// color mapping
+typedef unsigned char color;
+typedef struct {
+	color Red;
+	color Green;
+	color Blue;
+} RGB;
+
+// encode RGB 24 line [size: 15,360 bytes]
+void encode_line_rgb24(uint8_t *    _line_buffer,
+                       unsigned int _line_number);
+
+// encode RGB 16 line [size: 10,240 bytes]
+void encode_line_rgb16(uint8_t *    _line_buffer,
+                       unsigned int _line_number);
+#endif // ENABLE_RGB
+
+// encode YUV line [size: 10,240 bytes]
+void encode_line_yuv(uint8_t *    _line_buffer,
+                     unsigned int _line_number);
+
+// write re-start interval termination character
+//  _rsi    :   3-bit restart interval character [0..7]
+void write_RSI(unsigned int _rsi);
+
+#if ENABLE_WATERMARK
+// write VT watermark in Y8x8 lumiance array
+void embed_vt_watermark(void);
+#endif
 
 #endif//__JPEG_H__

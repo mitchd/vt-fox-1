@@ -1,10 +1,10 @@
+#include "dct.h"
 #include "jpegenc.h"
-#include "unistd.h"
 
-#define QTAB_SCALE	10
+#define QTAB_SCALE 10	
 
 // as you can see I use Paint tables
-static const uint8_t qtable_0_lum[8][8] =
+static const unsigned char qtable_0_lum[8][8] =
 {
 	{ 8,  6,  5,  8, 12, 20, 26, 31}, 
 	{ 6,  6,  7, 10, 13, 29, 30, 28},
@@ -16,7 +16,7 @@ static const uint8_t qtable_0_lum[8][8] =
 	{36, 46, 48, 49, 56, 50, 52, 50}
 };
 
-static const uint8_t qtable_0_chrom[8][8] =
+static const unsigned char qtable_0_chrom[8][8] =
 {
 	{ 9,  9, 12, 24, 50, 50, 50, 50},
 	{ 9, 11, 13, 33, 50, 50, 50, 50},
@@ -29,7 +29,7 @@ static const uint8_t qtable_0_chrom[8][8] =
 };
 
 // (1 << QTAB_SCALE)/qtable_0_lum[][]
-static const uint8_t qtable_lum[8][8] =
+static const unsigned char qtable_lum[8][8] =
 {
 	{128,171,205,128, 85, 51, 39, 33},
 	{171,171,146,102, 79, 35, 34, 37},
@@ -42,7 +42,7 @@ static const uint8_t qtable_lum[8][8] =
 };
 
 // (1 << QTAB_SCALE)/qtable_0_chrom[][]
-static const uint8_t qtable_chrom[8][8] =
+static const unsigned char qtable_chrom[8][8] =
 {
 	{114,114, 85, 43, 20, 20, 20, 20},
 	{114, 93, 79, 31, 20, 20, 20, 20},
@@ -55,7 +55,7 @@ static const uint8_t qtable_chrom[8][8] =
 };
 
 // zig-zag table
-static const uint8_t zig[64] =
+static const unsigned char zig[64] =
 {
 	 0,
 	 1, 8,
@@ -74,30 +74,30 @@ static const uint8_t zig[64] =
 	63
 };
 
-static const uint8_t std_dc_luminance_nrcodes[16] =
+static const unsigned char std_dc_luminance_nrcodes[16] =
 {
 	0,1,5,1,1,1,1,1,1,0,0,0,0,0,0,0
 };
-static const uint8_t std_dc_luminance_values[12] =
+static const unsigned char std_dc_luminance_values[12] =
 {
 	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
 };
 
-static const uint8_t std_dc_chrominance_nrcodes[16] =
+static const unsigned char std_dc_chrominance_nrcodes[16] =
 {
 	0,3,1,1,1,1,1,1,1,1,1,0,0,0,0,0
 };
-static const uint8_t std_dc_chrominance_values[12] =
+static const unsigned char std_dc_chrominance_values[12] =
 {
 	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
 };
 
-static const uint8_t std_ac_luminance_nrcodes[16] =
+static const unsigned char std_ac_luminance_nrcodes[16] =
 {
 	0,2,1,3,3,2,4,3,5,5,4,4,0,0,1,0x7d
 };
 
-static const uint8_t std_ac_luminance_values[162] =
+static const unsigned char std_ac_luminance_values[162] =
 {
 	0x01, 0x02, 0x03, 0x00, 0x04, 0x11, 0x05, 0x12,
 	0x21, 0x31, 0x41, 0x06, 0x13, 0x51, 0x61, 0x07,
@@ -122,12 +122,12 @@ static const uint8_t std_ac_luminance_values[162] =
 	0xf9, 0xfa
 };
 
-static const uint8_t std_ac_chrominance_nrcodes[16] =
+static const unsigned char std_ac_chrominance_nrcodes[16] =
 {
 	0,2,1,2,4,4,3,4,7,5,4,4,0,1,2,0x77
 };
 
-static const uint8_t std_ac_chrominance_values[162] =
+static const unsigned char std_ac_chrominance_values[162] =
 {
 	0x00, 0x01, 0x02, 0x03, 0x11, 0x04, 0x05, 0x21,
 	0x31, 0x06, 0x12, 0x41, 0x51, 0x07, 0x61, 0x71,
@@ -152,13 +152,13 @@ static const uint8_t std_ac_chrominance_values[162] =
 	0xf9, 0xfa
 };
 
-static const uint8_t HYDClen[12] =
+static const unsigned char HYDClen[12] =
 {
 	0x02, 0x03, 0x03, 0x03, 0x03, 0x03, 0x04, 0x05,
 	0x06, 0x07, 0x08, 0x09
 };
 
-static const uint8_t HCDClen[12] =
+static const unsigned char HCDClen[12] =
 {
 	0x02, 0x02, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
 	0x08, 0x09, 0x0a, 0x0b
@@ -177,7 +177,7 @@ static const unsigned short HCDCbits[12] =
 };
 
 
-static const uint8_t HYAClen[16][12] =
+static const unsigned char HYAClen[16][12] =
 {
 	{0x04, 0x02, 0x02, 0x03, 0x04, 0x05, 0x07, 0x08, 0x0a, 0x10, 0x10, 0x00},	// 00 - 0f
 	{0x00, 0x04, 0x05, 0x07, 0x09, 0x0b, 0x10, 0x10, 0x10, 0x10, 0x10, 0x00},	// 10 - 1f
@@ -217,7 +217,7 @@ static const unsigned short HYACbits[16][12] =
 	{0xFFF9, 0xFFF5, 0xFFF6, 0xFFF7, 0xFFF8, 0xFFF9, 0xFFFA, 0xFFFB, 0xFFFC, 0xFFFD, 0xFFFE, 0x0000}
 };
 
-static const uint8_t HCAClen[16][12] =
+static const unsigned char HCAClen[16][12] =
 {
 	{0x02, 0x02, 0x03, 0x04, 0x05, 0x05, 0x06, 0x07, 0x09, 0x0a, 0x0c, 0x00},	// 00 - 0f
 	{0x00, 0x04, 0x06, 0x08, 0x09, 0x0b, 0x0c, 0x10, 0x10, 0x10, 0x10, 0x00},	// 10 - 1f
@@ -273,7 +273,6 @@ bitbuffer_t;
 
 static bitbuffer_t bitbuf;
 
-
 /******************************************************************************
 **  quantize
 **  --------------------------------------------------------------------------
@@ -300,7 +299,7 @@ static short quantize(const short data, const unsigned short qt)
 **  This function writes byte into output buffer
 **  and flushes the buffer if it is full.
 **  
-**  uint8_t jpgbuff - global output buffer;
+**  unsigned char jpgbuff - global output buffer;
 **  unsigned      jpgn    - the buffer index;
 **  
 **  ARGUMENTS: b - byte;
@@ -309,18 +308,17 @@ static short quantize(const short data, const unsigned short qt)
 ******************************************************************************/
 
 // code-stream output counter
-static uint16_t jpgn = 0;
+static unsigned jpgn = 0;
 // code-stream output buffer, adjust its size if you need
-#define JPG_BUF_SIZE 256
-static uint8_t jpgbuff[JPG_BUF_SIZE];
+static unsigned char jpgbuff[256];
 
-static void writebyte(const uint8_t b)
+static void writebyte(const unsigned char b)
 {
 	jpgbuff[jpgn++] = b;
 
-	if (jpgn == JPG_BUF_SIZE) {
+	if (jpgn == sizeof(jpgbuff)) {
 		jpgn = 0;
-		write_jpeg(jpgbuff, JPG_BUF_SIZE);
+		write_jpeg(jpgbuff, sizeof(jpgbuff));
 	}
 }
 
@@ -357,7 +355,7 @@ static void write_SOF0info(const short height, const short width)
 	writeword(width);	//width
 	writebyte(3);		//nrofcomponents
 	writebyte(1);		//IdY
-	writebyte(0x11);	//HVY, 4:4:4 subsampling (0x22 for 4:2:0)
+	writebyte(0x21);	//HVY, 4:4:4 subsampling (0x22 for 4:2:0)
 	writebyte(0);		//QTY
 	writebyte(2);		//IdCb
 	writebyte(0x11);	//HVCb
@@ -392,12 +390,12 @@ static void write_DQTinfo(void)
 	writebyte(0);
 
 	for (i = 0; i < 64; i++) 
-		writebyte(((uint8_t*)qtable_0_lum)[zig[i]]); // zig-zag order
+		writebyte(((unsigned char*)qtable_0_lum)[zig[i]]); // zig-zag order
 
 	writebyte(1);
 
 	for (i = 0; i < 64; i++) 
-		writebyte(((uint8_t*)qtable_0_chrom)[zig[i]]); // zig-zag order
+		writebyte(((unsigned char*)qtable_0_chrom)[zig[i]]); // zig-zag order
 }
 
 static void write_DHTinfo(void)
@@ -433,6 +431,20 @@ static void write_DHTinfo(void)
 		writebyte(std_ac_chrominance_values[i]);
 }
 
+
+//  write_DRIinfo()
+//
+//  Writes "Define Restart Interval" spacing and defines the interval
+//  between RSTn markers in macroblocks
+static void write_DRIinfo(void)
+{
+	writeword(0xFFDD);  // write DRI (define restart interval) marker
+    writeword(4);       // DRI Lr segment length (4 bytes total)
+	writeword(40);      // restart interval is 40 MCUs (each MCU is 16
+                        // pixels wide, which for an image 640 pixels
+                        // wide is 640/16 = 40 MCUs
+}
+
 /******************************************************************************
 **  writebits
 **  --------------------------------------------------------------------------
@@ -456,7 +468,7 @@ static void writebits(bitbuffer_t *const pbb, unsigned bits, unsigned nbits)
 
 	// flush whole bytes
 	while (nbits >= 8) {
-		uint8_t b;
+		unsigned char b;
 
 		nbits -= 8;
 		b = pbb->buf >> nbits;
@@ -546,12 +558,25 @@ void huffman_start(short height, short width)
 	write_DQTinfo();
 	write_SOF0info(height, width);
 	write_DHTinfo();
+	write_DRIinfo();    // set restart interval length
 	write_SOSinfo();
 
 	huffman_ctx[2].dc = 
 	huffman_ctx[1].dc = 
 	huffman_ctx[0].dc = 0;
 }
+
+//
+// huffman_resetdc()
+//
+// reset DC predictors for Huffman encoding (needed every restart interval)
+void huffman_resetdc(void)
+{
+	huffman_ctx[2].dc = 
+	huffman_ctx[1].dc = 
+	huffman_ctx[0].dc = 0;
+}
+
 
 /******************************************************************************
 **  huffman_stop
@@ -628,3 +653,312 @@ void huffman_encode(huffman_t *const ctx, const short data[])
 		writebits(&bitbuf, ctx->hacbit[0][0], ctx->haclen[0][0]);
 	}
 }
+
+// write re-start interval termination character
+//  _rsi    :   3-bit restart interval character [0..7]
+void write_RSI(unsigned int _rsi)
+{
+    // ensure re-start interval is valid
+    _rsi &= 0x07;   // mask with '111' (keep only last 3 bits)
+
+    // flush buffer
+    flushbits(&bitbuf);
+
+    // write marker with 3-bit restart interval counter
+    writeword(0xFFD0 | _rsi);
+    
+    // reset block-to-block predictors (DC values, etc.)
+    huffman_resetdc();
+}
+
+#ifdef ENABLE_RGB
+inline color RGB2Y(const color r, const color g, const color b)
+{
+    return (32768 + 19595*r + 38470*g + 7471*b) >> 16;
+}
+inline color RGB2Cb(const color r, const color g, const color b)
+{
+    return (8421376 - 11058*r - 21709*g + 32767*b) >> 16;
+}
+inline color RGB2Cr(const color r, const color g, const color b)
+{
+    return (8421376 + 32767*r - 27438*g - 5329*b) >> 16;
+}
+
+// chroma subsampling, i.e. converting a 16x16 RGB block into 8x8 Cb and Cr
+void subsample(RGB rgb[8][16], short cb[8][8], short cr[8][8])
+{
+	RGB pixel;
+    unsigned int r;     // row index
+    unsigned int c;     // col index
+	for (r = 0; r < 8; r++)
+	for (c = 0; c < 8; c++)
+	{
+		pixel.Red = (rgb[r][2*c].Red+rgb[r][2*c+1].Red)/2;
+		pixel.Green = (rgb[r][2*c].Green+rgb[r][2*c+1].Green)/2;
+		pixel.Blue = (rgb[r][2*c].Blue+rgb[r][2*c+1].Blue)/2;
+		cb[r][c] = (short)RGB2Cb( pixel.Red, pixel.Green, pixel.Blue )-128;
+		cr[r][c] = (short)RGB2Cr( pixel.Red, pixel.Green, pixel.Blue )-128;
+	}
+}
+#endif // ENABLE_RGB
+
+#ifdef ENABLE_RGB
+// static arrays for processing
+RGB     RGB8x16[8][16]; // two 8x8 red/green/blue blocks
+#endif // ENABLE_RGB
+
+short   Y8x8[2][8][8];  // luminance
+short   Cb8x8[8][8];    // chrominance
+short   Cr8x8[8][8];    // chrominance
+
+#ifdef ENABLE_RGB
+// encode RGB 24 line [size: 15,360 bytes]
+void encode_line_rgb24(uint8_t *    _line_buffer,
+                       unsigned int _line_number)
+{
+    // number of blocks in row: 40 = 640 pixels / 16 pixels per block
+    unsigned int num_blocks = 40;
+    
+    unsigned int b;
+    unsigned int r;
+    unsigned int c;
+    for (b=0; b<num_blocks; b++) {
+        // get 8x16 pixel RGB block
+        for (r=0; r<8; r++)
+        for (c=0; c<16; c++)
+        {
+            // get pixel index and extract RGB values
+            unsigned int n = 3*(640*r + 16*b + c);
+            RGB8x16[r][c].Red   = _line_buffer[n+0];
+            RGB8x16[r][c].Green = _line_buffer[n+1];
+            RGB8x16[r][c].Blue  = _line_buffer[n+2];
+        }
+        
+        // convert to YCbCr
+        color R, G, B;
+        for (r=0; r<8; r++)
+        for (c=0; c<8; c++)
+        {
+            R = RGB8x16[r][c].Red;
+            G = RGB8x16[r][c].Green;
+            B = RGB8x16[r][c].Blue;
+            Y8x8[0][r][c] = RGB2Y(R,G,B)-128;
+
+            R = RGB8x16[r][c+8].Red;
+            G = RGB8x16[r][c+8].Green;
+            B = RGB8x16[r][c+8].Blue;
+            Y8x8[1][r][c] = RGB2Y(R,G,B)-128;
+        }
+#if ENABLE_WATERMARK
+        // embed the watermark on the first block of the last
+        // line (bottom/left corner)
+        if (_line_number == 59 && b==0)
+            embed_vt_watermark();
+#endif
+
+        // subsample
+        subsample(RGB8x16, Cb8x8, Cr8x8);
+
+        // 1 Y-compression
+        dct(Y8x8[0], Y8x8[0]);
+        huffman_encode(HUFFMAN_CTX_Y, (short*)Y8x8[0]);
+
+        // 2 Y-compression
+        dct(Y8x8[1], Y8x8[1]);
+        huffman_encode(HUFFMAN_CTX_Y, (short*)Y8x8[1]);
+
+        // 1 Cb-compression
+        dct(Cb8x8, Cb8x8);
+        huffman_encode(HUFFMAN_CTX_Cb, (short*)Cb8x8);
+
+        // 1 Cr-compression
+        dct(Cr8x8, Cr8x8);
+        huffman_encode(HUFFMAN_CTX_Cr, (short*)Cr8x8);
+    }
+
+    // write restart interval termination character
+    write_RSI(_line_number % 8);
+}
+#endif // ENABLE_RGB
+
+#ifdef ENABLE_RGB
+// encode RGB 16 line [size: 10,240 bytes]
+void encode_line_rgb16(uint8_t *    _line_buffer,
+                       unsigned int _line_number)
+{
+    // number of blocks in row: 40 = 640 pixels / 16 pixels per block
+    unsigned int num_blocks = 40;
+    
+    unsigned int b;
+    unsigned int r;
+    unsigned int c;
+    for (b=0; b<num_blocks; b++) {
+        // get 8x16 pixel RGB block
+        for (r=0; r<8; r++)
+        for (c=0; c<16; c++)
+        {
+            // get pixel index and extract RGB values
+            unsigned int n = 2*(640*r + 16*b + c);
+
+            // read in two bytes from buffer
+            uint8_t v0 = _line_buffer[n+0];
+            uint8_t v1 = _line_buffer[n+1];
+
+            // de-compress RGB values from compact two-byte
+            // to three-byte representation
+            // [v0 v0 v0 v0 v0 v0 v0 v0|v1 v1 v1 v1 v1 v1 v1 v1]
+            // [r7 r6 r5 r4 r3 g7 g6 g5|g4 g3 g2 b7 b6 b5 b4 b3]
+            RGB8x16[r][c].Red   = v0 & 0xf8;
+            RGB8x16[r][c].Green = ((v0 << 5) & 0xe0) | ((v1 >> 2) & 0x1c);
+            RGB8x16[r][c].Blue  = (v1 << 3) & 0xf8;
+        }
+        
+        // convert to YCbCr
+        color R, G, B;
+        for (r=0; r<8; r++)
+        for (c=0; c<8; c++)
+        {
+            R = RGB8x16[r][c].Red;
+            G = RGB8x16[r][c].Green;
+            B = RGB8x16[r][c].Blue;
+            Y8x8[0][r][c] = RGB2Y(R,G,B)-128;
+
+            R = RGB8x16[r][c+8].Red;
+            G = RGB8x16[r][c+8].Green;
+            B = RGB8x16[r][c+8].Blue;
+            Y8x8[1][r][c] = RGB2Y(R,G,B)-128;
+        }
+#if ENABLE_WATERMARK
+        // embed the watermark on the first block of the last
+        // line (bottom/left corner)
+        if (_line_number == 59 && b==0)
+            embed_vt_watermark();
+#endif
+
+        // subsample
+        subsample(RGB8x16, Cb8x8, Cr8x8);
+
+        // 1 Y-compression
+        dct(Y8x8[0], Y8x8[0]);
+        huffman_encode(HUFFMAN_CTX_Y, (short*)Y8x8[0]);
+
+        // 2 Y-compression
+        dct(Y8x8[1], Y8x8[1]);
+        huffman_encode(HUFFMAN_CTX_Y, (short*)Y8x8[1]);
+
+        // 1 Cb-compression
+        dct(Cb8x8, Cb8x8);
+        huffman_encode(HUFFMAN_CTX_Cb, (short*)Cb8x8);
+
+        // 1 Cr-compression
+        dct(Cr8x8, Cr8x8);
+        huffman_encode(HUFFMAN_CTX_Cr, (short*)Cr8x8);
+    }
+
+    // write restart interval termination character
+    write_RSI(_line_number % 8);
+}
+#endif // ENABLE_RGB
+
+// encode YUV line [size: 10,240 bytes]
+void encode_line_yuv(uint8_t *    _line_buffer,
+                     unsigned int _line_number)
+{
+    // number of blocks in row: 40 = 640 pixels / 16 pixels per block
+    unsigned int num_blocks = 40;
+    
+    unsigned int b;
+    unsigned int r;
+    unsigned int c;
+    for (b=0; b<num_blocks; b++) {
+        // get 8x16 pixel YUV block
+        for (r=0; r<8; r++)
+        for (c=0; c<8; c++)
+        {
+            // get pixel index and extract YUV values
+            unsigned int n = 2*(640*r + 16*b + 2*c);
+
+            // first four pairs of pixels get put into Y8x8[0],
+            // and last four pairs get pu into Y8x8[1]
+            unsigned int yindex = c < 4 ? 0 : 1;
+
+            Y8x8[yindex][r][(2*c)%8+0] = _line_buffer[n+0] - 128;
+            Cb8x8[r][c]                = _line_buffer[n+1] - 128;
+            Y8x8[yindex][r][(2*c)%8+1] = _line_buffer[n+2] - 128;
+            Cr8x8[r][c]                = _line_buffer[n+3] - 128;
+        }
+#if ENABLE_WATERMARK
+        // embed the watermark on the first block of the last
+        // line (bottom/left corner)
+        if (_line_number == 59 && b==0)
+            embed_vt_watermark();
+#endif
+
+        // 1 Y-compression
+        dct(Y8x8[0], Y8x8[0]);
+        huffman_encode(HUFFMAN_CTX_Y, (short*)Y8x8[0]);
+
+        // 2 Y-compression
+        dct(Y8x8[1], Y8x8[1]);
+        huffman_encode(HUFFMAN_CTX_Y, (short*)Y8x8[1]);
+
+        // 1 Cb-compression
+        dct(Cb8x8, Cb8x8);
+        huffman_encode(HUFFMAN_CTX_Cb, (short*)Cb8x8);
+
+        // 1 Cr-compression
+        dct(Cr8x8, Cr8x8);
+        huffman_encode(HUFFMAN_CTX_Cr, (short*)Cr8x8);
+    }
+
+    // write restart interval termination character
+    write_RSI(_line_number % 8);
+}
+
+#if ENABLE_WATERMARK
+// write VT watermark in Y8x8 luminance array
+void embed_vt_watermark(void)
+{
+    // luminance value
+    short v = 60;
+
+    // left half of the 'V'
+    Y8x8[0][0][0] = v;  Y8x8[0][0][1] = v;
+    Y8x8[0][1][0] = v;  Y8x8[0][1][1] = v;
+    Y8x8[0][2][1] = v;  Y8x8[0][2][2] = v;
+    Y8x8[0][3][1] = v;  Y8x8[0][3][2] = v;
+    Y8x8[0][4][2] = v;  Y8x8[0][4][3] = v;
+    Y8x8[0][5][2] = v;  Y8x8[0][5][3] = v;
+    Y8x8[0][6][3] = v;  Y8x8[0][6][4] = v;
+    Y8x8[0][7][3] = v;  Y8x8[0][7][4] = v;
+
+    // right half of the 'V'
+    Y8x8[0][5][4] = v;  Y8x8[0][5][5] = v;
+    Y8x8[0][4][4] = v;  Y8x8[0][4][5] = v;
+    Y8x8[0][3][5] = v;  Y8x8[0][3][6] = v;
+    Y8x8[0][2][5] = v;  Y8x8[0][2][6] = v;
+    Y8x8[0][1][6] = v;  Y8x8[0][1][7] = v;
+    Y8x8[0][0][6] = v;  Y8x8[0][0][7] = v;
+
+    // top of the 'T'
+    Y8x8[1][0][0] = v;  Y8x8[1][1][0] = v;
+    Y8x8[1][0][1] = v;  Y8x8[1][1][1] = v;
+    Y8x8[1][0][2] = v;  Y8x8[1][1][2] = v;
+    Y8x8[1][0][3] = v;  Y8x8[1][1][3] = v;
+    Y8x8[1][0][4] = v;  Y8x8[1][1][4] = v;
+    Y8x8[1][0][5] = v;  Y8x8[1][1][5] = v;
+    Y8x8[1][0][6] = v;  Y8x8[1][1][6] = v;
+    Y8x8[1][0][7] = v;  Y8x8[1][1][7] = v;
+
+    // arm of the 'T'
+    Y8x8[1][1][3] = v;  Y8x8[1][1][4] = v;
+    Y8x8[1][2][2] = v;  Y8x8[1][2][3] = v;
+    Y8x8[1][3][2] = v;  Y8x8[1][3][3] = v;
+    Y8x8[1][4][1] = v;  Y8x8[1][4][2] = v;
+    Y8x8[1][5][1] = v;  Y8x8[1][5][2] = v;
+    Y8x8[1][6][0] = v;  Y8x8[1][6][1] = v;
+    Y8x8[1][7][0] = v;  Y8x8[1][7][1] = v;
+}
+#endif
+

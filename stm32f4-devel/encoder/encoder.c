@@ -1,48 +1,64 @@
 #include "stdint.h"
-#include "rgbdata.h"
 #include "dct.h"
 #include "jpegenc.h"
 #include "spi_flash.h"
 
+// constants specific to 640 x 480 image
+#define IMG_WIDTH   (640)   // image width [pixels]
+#define IMG_HEIGHT  (480)   // image height [pixels]
+#define NUM_LINES   (60)    // number of 8-pixel lines in image
+
 uint32_t file_addr_ptr = 0;
 
-void write_jpeg(uint8_t* buff, unsigned size){
-  flashWriteBytes( file_addr_ptr, buff, size );
-  file_addr_ptr += size;
+//void write_jpeg(uint8_t* buff, unsigned size){
+void write_jpeg(const unsigned char buff[], const unsigned size)
+{
+    flashWriteBytes( file_addr_ptr, buff, size );
+    file_addr_ptr += size;
 }
 
-inline color RGB2Y(const color r, const color g, const color b){
-  return (32768 + 19595*r + 38470*g + 7471*b) >> 16;
-}
-inline color RGB2Cb(const color r, const color g, const color b){
-  return (8421376 - 11058*r - 21709*g + 32767*b) >> 16;
-}
-inline color RGB2Cr(const color r, const color g, const color b){
-  return (8421376 + 32767*r - 27438*g - 5329*b) >> 16;
+// initialize jpeg encoder
+void jpeg_init(void)
+{
+    // write the .jpg header
+    // NOTE: this is no longer necessary because the image never
+    //       changes size and the Huffman tables are fixed so there
+    //       is no need to actually send this information with each
+    //       image.
+    //huffman_start(IMG_HEIGHT & -8, IMG_WIDTH & -8);
+
+    // reset the DC values
+    huffman_resetdc();
 }
 
-
-// chroma conversion
-void convert(RGB rgb[8][8], short y[8][8], short cb[8][8], short cr[8][8]){
-  RGB pixel;
-  uint8_t r,c;
-  for (r = 0; r < 8; r++)
-  for (c = 0; c < 8; c++){
-    pixel = rgb[r][c];
-    cb[r][c] = (short)RGB2Cb( pixel.Red, pixel.Green, pixel.Blue )-128;
-    cr[r][c] = (short)RGB2Cr( pixel.Red, pixel.Green, pixel.Blue )-128;
-    y[r][c] = (short)RGB2Y(pixel.Red, pixel.Green, pixel.Blue)-128;
-  }
+// flush buffer
+void jpeg_close(void)
+{
+    // stop Huffman encoding
+    // NOTE: this flushes the buffer and writes the 'end of image'
+    //       marker; even though the 'huffman_start()' method is
+    //       not called, it is still important to call huffman_stop()
+    huffman_stop();
 }
 
-void jpeg_init(void){
-  huffman_start(IMG_HEIGHT & -8, IMG_WIDTH & -8);
-}
+// TODO:
+// write yuv_get_line() method and use the following
+// method to encode the line:
+//
+//  encode_line_yuv(line_buffer, line_number);
+//
+// where 'line_buffer' is an array of 10240 bytes and
+// 'line_number' designates which of the 60 image
+// lines is being encoded
+//
+// See 'encoder/test_encoder.c' for details
 
-void jpeg_close(void){
-  huffman_stop();
-}
 
+
+// 
+// old methods no longer used
+//
+#if 0
 void rgb_get_block(uint16_t x, RGB *buf, uint8_t *input_buffer){
   uint8_t r;
   uint16_t c, i, offset;
@@ -88,3 +104,4 @@ void convert_rows(uint8_t input_buffer[8][IMG_WIDTH*3]){
   
   return;
 }
+#endif
