@@ -84,7 +84,7 @@ typedef struct{
 //system_data is written at the beginning of the MRAM memory space
 //
 typedef struct{
-  line_data  line[80];
+  line_data  line[60];
 } system_data;
 
 #define SYSTEM_DATA_ADDR		0x000100
