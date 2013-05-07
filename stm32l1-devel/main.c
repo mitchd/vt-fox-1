@@ -37,13 +37,14 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 */
 #include "ch.h"
 #include "hal.h"
+#include "stdlib.h"
 #include "uart_iface.h"
 #include "spi_flash.h"
 #include "camera_iface.h"
 #include "chprintf.h"
 
 //WORKING_AREA(waUART_Thread, 512);
-WORKING_AREA(waCamera_Thread, 10240+1024);
+//WORKING_AREA(waCamera_Thread, 10240+1024);
 
 /*
  * Application entry point.
@@ -81,17 +82,46 @@ int main(void) {
   //chThdCreateStatic(waUART_Thread, sizeof(waUART_Thread), NORMALPRIO,
   //                  UART_Thread,NULL);
 
-  //configureSPIFlash();
+  configureSPIFlash();
 
-  chThdCreateStatic(waCamera_Thread, sizeof(waCamera_Thread), HIGHPRIO,
-                    cameraControlThread,NULL);
+  //chThdCreateStatic(waCamera_Thread, sizeof(waCamera_Thread), HIGHPRIO,
+  //                  cameraControlThread,NULL);
   /*
    * Normal main() thread activity, in this demo it does nothing except
    * sleeping in a loop and check the button state, when the button is
    * pressed the test procedure is launched with output on the serial
    * driver 2.
    */
+  system_data *writeData = (system_data*)malloc(sizeof(system_data));
+  system_data *readData = (system_data*)malloc(sizeof(system_data));
+
+  uint8_t i = 0;
+  for( i=0; i<80; i++ ){
+    writeData->line[i].line_num = i;
+    writeData->line[i].start_addr = ((uint32_t)i*1000)+IMAGE_DATA_START;
+    writeData->line[i].end_addr = ((uint32_t)(i+1)*1000)-1+IMAGE_DATA_START;
+    writeData->line[i].chksum = 80-i;
+  }
+  line_data lineR, lineW;
   while (TRUE) {
-    chThdSleepMilliseconds(500);
+    //Write data to SPI flash
+    flashWriteBytes( SYSTEM_DATA_ADDR, (uint8_t*)writeData, sizeof(writeData) );
+    //Wait three seconds
+    chThdSleepMilliseconds(3000);
+    //Read data from SPI flash
+    flashReadBytes( SYSTEM_DATA_ADDR, (uint8_t*)readData, sizeof(readData) );
+    for( i=0; i<80; i++ ){
+        chThdSleepMilliseconds(500);
+        lineW = writeData->line[i];
+        lineR = readData->line[i];
+        chprintf(IHU_UART,"Saved Data:\r\n");
+        chprintf(IHU_UART,"Line %d %X %X %d\r\n\n\n", lineW.line_num, lineW.start_addr, lineW.end_addr, lineW.chksum);
+        chprintf(IHU_UART,"Read Data:\r\n");
+        chprintf(IHU_UART,"Line %d %X %X %d\r\n\n\n", lineR.line_num, lineR.start_addr, lineR.end_addr, lineW.chksum);
+        if (writeData->line[i].start_addr == readData->line[i].start_addr)
+            if (writeData->line[i].end_addr == readData->line[i].end_addr)
+                if (writeData->line[i].chksum == readData->line[i].chksum)
+                    chprintf( IHU_UART, "Data check SUCCESS\r\n" );
+    }
   }
 }
