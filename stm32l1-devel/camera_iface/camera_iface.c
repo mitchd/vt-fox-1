@@ -527,7 +527,7 @@ msg_t configureCam(void){
         cameraWriteCycle(0x6f,0x9f);
 
         cameraWriteCycle(0xb0,0x84);*/
-  powerdownCam();
+  //powerdownCam();
   return (msg_t)tmp;
     
 }
@@ -611,8 +611,8 @@ static void resetReadPointer(void){
 
 
 msg_t cameraControlThread(void* arg){
-  const uint16_t IMG_WIDTH = 320;
-  const uint16_t IMG_HEIGHT = 240;
+  const uint16_t IMG_WIDTH = 640;
+  const uint16_t IMG_HEIGHT = 480;
   prepareTimer();
   setupCamPort();
 
@@ -621,7 +621,7 @@ msg_t cameraControlThread(void* arg){
 
   uint8_t segmentNumber = 0x00;
   msg_t success = configureCam();
-/*  if( success == RDY_OK ){  
+  if( success == RDY_OK ){  
     //Ensure WEN is disabled
     palClearPad( FIFO_CTL_PORT, FIFO_WEN );
     jpeg_init();
@@ -643,16 +643,13 @@ msg_t cameraControlThread(void* arg){
         palClearPad( FIFO_CTL_PORT, FIFO_WEN );
         uint8_t bulk_reads;
         for( bulk_reads=0; bulk_reads < IMG_HEIGHT/8/2; bulk_reads++ ){
-          palSetPad( GPIOB, 6 );
           fifoGrabBytes( pixelData, IMG_WIDTH*2*8 );
-          convert_rows( pixelData );
-          palClearPad( GPIOB, 6 );
+          //convert_rows( pixelData );
+          sdWrite( &SD3, &pixelData[0], IMG_WIDTH*2*8 );
         }
       }
     }
-    jpeg_close();*/
-  if( success == RDY_OK ){
-    chprintf(IHU_UART,"SETUP SUCCESS\r\n");
+    //jpeg_close();
   }else{
     chprintf(IHU_UART,"SETUP FAILED\r\n");
   }
