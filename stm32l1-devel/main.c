@@ -43,7 +43,7 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #include "chprintf.h"
 
 //WORKING_AREA(waUART_Thread, 512);
-//WORKING_AREA(waCamera_Thread, 10240+1024);
+WORKING_AREA(waCamera_Thread, 10240+1024);
 
 /*
  * Application entry point.
@@ -83,8 +83,8 @@ int main(void) {
 
   //configureSPIFlash();
 
-  //chThdCreateStatic(waCamera_Thread, sizeof(waCamera_Thread), HIGHPRIO,
-  //                  cameraControlThread,NULL);
+  chThdCreateStatic(waCamera_Thread, sizeof(waCamera_Thread), HIGHPRIO,
+                    cameraControlThread,NULL);
   /*
    * Normal main() thread activity, in this demo it does nothing except
    * sleeping in a loop and check the button state, when the button is
@@ -93,6 +93,5 @@ int main(void) {
    */
   while (TRUE) {
     chThdSleepMilliseconds(500);
-    chprintf((BaseChannel *)&SD1,"Hello World\r\n");
   }
 }
