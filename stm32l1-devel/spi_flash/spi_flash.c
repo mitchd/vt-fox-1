@@ -48,7 +48,6 @@ static const SPIConfig spi1cfg = {
 
 
 static void flashSleep(void){
-  /*
   uint8_t flash_cmd = FLASH_SLEEP;
   //NSS Low
   spiSelect( &SPID1 );
@@ -56,19 +55,16 @@ static void flashSleep(void){
   spiSend( &SPID1, 1, &flash_cmd );
   //Send NSS High (execute WEN)
   spiUnselect( &SPID1 );
-  */
 }
 
 static void flashWake(void){
-  /*
-  uint8_t flash_cmd = FLASH_SLEEP;
+  uint8_t flash_cmd = FLASH_WAKE;
   //NSS Low
   spiSelect( &SPID1 );
   //Transmit the write enable command
   spiSend( &SPID1, 1, &flash_cmd );
   //Send NSS High (execute WEN)
   spiUnselect( &SPID1 );
-  */
 }
 
 
