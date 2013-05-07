@@ -28,7 +28,7 @@
 /*
  * ST32L1151xD memory setup.
  */
-__main_stack_size__     = 0x0400;
+__main_stack_size__     = 0x1000;
 __process_stack_size__  = 0x0400;
 
 MEMORY

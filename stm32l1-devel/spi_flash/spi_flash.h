@@ -87,8 +87,8 @@ typedef struct{
   line_data  line[80];
 } system_data;
 
-#define SYSTEM_DATA_ADDR		0x000000
-#define IMAGE_DATA_START		0x000400
+#define SYSTEM_DATA_ADDR		0x000100
+#define IMAGE_DATA_START		0x000500
 
 //Opcodes for Everspin MRAM MR25H10 
 #define FLASH_LOW_ADDR			0x000000  

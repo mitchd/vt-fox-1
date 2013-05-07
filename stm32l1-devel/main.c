@@ -92,35 +92,35 @@ int main(void) {
    * pressed the test procedure is launched with output on the serial
    * driver 2.
    */
-  system_data *writeData = (system_data*)malloc(sizeof(system_data));
-  system_data *readData = (system_data*)malloc(sizeof(system_data));
-
+  system_data writeData;
+  system_data readData;
+  
   uint8_t i = 0;
   for( i=0; i<80; i++ ){
-    writeData->line[i].line_num = i;
-    writeData->line[i].start_addr = ((uint32_t)i*1000)+IMAGE_DATA_START;
-    writeData->line[i].end_addr = ((uint32_t)(i+1)*1000)-1+IMAGE_DATA_START;
-    writeData->line[i].chksum = 80-i;
+    writeData.line[i].line_num = i;
+    writeData.line[i].start_addr = ((uint32_t)i*1000)+IMAGE_DATA_START;
+    writeData.line[i].end_addr = ((uint32_t)(i+1)*1000)-1+IMAGE_DATA_START;
+    writeData.line[i].chksum = 80-i;
   }
   line_data lineR, lineW;
   while (TRUE) {
     //Write data to SPI flash
-    flashWriteBytes( SYSTEM_DATA_ADDR, (uint8_t*)writeData, sizeof(writeData) );
+    flashWriteBytes( SYSTEM_DATA_ADDR, (uint8_t*)&writeData, sizeof(writeData) );
     //Wait three seconds
     chThdSleepMilliseconds(3000);
     //Read data from SPI flash
-    flashReadBytes( SYSTEM_DATA_ADDR, (uint8_t*)readData, sizeof(readData) );
+    flashReadBytes( SYSTEM_DATA_ADDR, (uint8_t*)&readData, sizeof(readData) );
     for( i=0; i<80; i++ ){
         chThdSleepMilliseconds(500);
-        lineW = writeData->line[i];
-        lineR = readData->line[i];
+        lineW = writeData.line[i];
+        lineR = readData.line[i];
         chprintf(IHU_UART,"Saved Data:\r\n");
         chprintf(IHU_UART,"Line %d %X %X %d\r\n\n\n", lineW.line_num, lineW.start_addr, lineW.end_addr, lineW.chksum);
         chprintf(IHU_UART,"Read Data:\r\n");
-        chprintf(IHU_UART,"Line %d %X %X %d\r\n\n\n", lineR.line_num, lineR.start_addr, lineR.end_addr, lineW.chksum);
-        if (writeData->line[i].start_addr == readData->line[i].start_addr)
-            if (writeData->line[i].end_addr == readData->line[i].end_addr)
-                if (writeData->line[i].chksum == readData->line[i].chksum)
+        chprintf(IHU_UART,"Line %d %X %X %d\r\n\n\n", lineR.line_num, lineR.start_addr, lineR.end_addr, lineR.chksum);
+        if (lineW.start_addr == lineR.start_addr)
+            if (lineW.end_addr == lineR.end_addr)
+                if (lineW.chksum == lineR.chksum)
                     chprintf( IHU_UART, "Data check SUCCESS\r\n" );
     }
   }

@@ -46,24 +46,9 @@ static const SPIConfig spi1cfg = {
   0 		//Configuration Register stuff (set bits here to go slow)
 };
 
-/*
-static void  checkBusy(void){
-  uint8_t flash_cmd;
-  uint8_t flash_status = 0;
-  //Send NSS Low
-  spiSelect( &SPID1 );
-  //Set the read status register command
-  flash_cmd = FLASH_READ_STATUS;
-  spiSend( &SPID1, 1, &flash_cmd );
-  do{
-    //Get the status
-    spiReceive( &SPID1, 1, &flash_status );
-  }while(FLASH_STATUS_BUSY & flash_status );
-  spiUnselect( &SPID1 );
-  return; //Check for write complete
-}*/
 
 static void flashSleep(void){
+  /*
   uint8_t flash_cmd = FLASH_SLEEP;
   //NSS Low
   spiSelect( &SPID1 );
@@ -71,9 +56,11 @@ static void flashSleep(void){
   spiSend( &SPID1, 1, &flash_cmd );
   //Send NSS High (execute WEN)
   spiUnselect( &SPID1 );
+  */
 }
 
 static void flashWake(void){
+  /*
   uint8_t flash_cmd = FLASH_SLEEP;
   //NSS Low
   spiSelect( &SPID1 );
@@ -81,6 +68,7 @@ static void flashWake(void){
   spiSend( &SPID1, 1, &flash_cmd );
   //Send NSS High (execute WEN)
   spiUnselect( &SPID1 );
+  */
 }
 
 
@@ -141,6 +129,7 @@ void flashWriteByte( uint32_t addr, uint8_t data ){
   //Acquire the SPI device
   spiAcquireBus( &SPID1 );
   flashWake();
+  chThdSleepMicroseconds(400);
   //Wait until there is no write in progress
   //checkBusy();
   //Set the command
@@ -157,7 +146,7 @@ void flashWriteByte( uint32_t addr, uint8_t data ){
   //Transmit the byte write command
   spiSend( &SPID1, 1, &flash_cmd );
   //Transmit the destination address
-  spiSend( &SPID1, 3, flash_addr );
+  spiSend( &SPID1, 3, &flash_addr );
   //Transmit the byte
   spiSend( &SPID1, 1, &data );
   //NSS High
@@ -190,6 +179,7 @@ void flashWriteBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   //Acquire the SPI device
   spiAcquireBus( &SPID1 );
   flashWake();
+  chThdSleepMicroseconds(400);
   //NSS Low
   spiSelect( &SPID1 );
   //Set the WEN command
@@ -232,6 +222,7 @@ uint8_t flashReadByte( uint32_t addr ){
   //Grab the SPI device
   spiAcquireBus( &SPID1 );
   flashWake();
+  chThdSleepMicroseconds(400);
   flash_cmd = FLASH_READ;
   //Send cmd
   spiSelect( &SPID1 );
@@ -258,6 +249,7 @@ void flashReadBytes( uint32_t addr, uint8_t* data, uint32_t n ){
   //Grab the SPI device
   spiAcquireBus( &SPID1 );
   flashWake();
+  chThdSleepMicroseconds(400);
   //Set high speed read cmd
   flash_cmd = FLASH_READ;
   //Send cmd
