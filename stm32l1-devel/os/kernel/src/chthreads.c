@@ -1,6 +1,6 @@
 /*
     ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+                 2011,2012,2013 Giovanni Di Sirio.
 
     This file is part of ChibiOS/RT.
 
@@ -16,13 +16,6 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-                                      ---
-
-    A special exception to the GPL can be applied should you wish to distribute
-    a combined work that includes ChibiOS/RT, without being obliged to provide
-    the source code for any proprietary components. See the file exception.txt
-    for full details of how and when the exception can be applied.
 */
 
 /**
@@ -78,6 +71,9 @@ Thread *_thread_init(Thread *tp, tprio_t prio) {
   tp->p_prio = prio;
   tp->p_state = THD_STATE_SUSPENDED;
   tp->p_flags = THD_MEM_MODE_STATIC;
+#if CH_TIME_QUANTUM > 0
+  tp->p_preempt = CH_TIME_QUANTUM;
+#endif
 #if CH_USE_MUTEXES
   tp->p_realprio = prio;
   tp->p_mtxlist = NULL;
@@ -237,7 +233,7 @@ tprio_t chThdSetPriority(tprio_t newprio) {
  *          in the @p THD_STATE_SUSPENDED state.
  * @post    The specified thread is immediately started or put in the ready
  *          list depending on the relative priority levels.
- * @note    Use this function to start threads created with @p chThdInit().
+ * @note    Use this function to start threads created with @p chThdCreateI().
  *
  * @param[in] tp        pointer to the thread
  * @return              The pointer to the thread.
@@ -392,9 +388,9 @@ void chThdExitS(msg_t msg) {
  *          The memory used by the exited thread is handled in different ways
  *          depending on the API that spawned the thread:
  *          - If the thread was spawned by @p chThdCreateStatic() or by
- *            @p chThdInit() then nothing happens and the thread working area
- *            is not released or modified in any way. This is the default,
- *            totally static, behavior.
+ *            @p chThdCreateI() then nothing happens and the thread working
+ *            area is not released or modified in any way. This is the
+ *            default, totally static, behavior.
  *          - If the thread was spawned by @p chThdCreateFromHeap() then
  *            the working area is returned to the system heap.
  *          - If the thread was spawned by @p chThdCreateFromMemoryPool()

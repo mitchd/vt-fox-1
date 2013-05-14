@@ -1,6 +1,6 @@
 /*
     ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+                 2011,2012,2013 Giovanni Di Sirio.
 
     This file is part of ChibiOS/RT.
 
@@ -16,13 +16,6 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-                                      ---
-
-    A special exception to the GPL can be applied should you wish to distribute
-    a combined work that includes ChibiOS/RT, without being obliged to provide
-    the source code for any proprietary components. See the file exception.txt
-    for full details of how and when the exception can be applied.
 */
 
 /**
@@ -56,8 +49,7 @@ void _vt_init(void) {
 
 /**
  * @brief   Enables a virtual timer.
- * @note    The associated function is invoked by an interrupt handler within
- *          the I-Locked state, see @ref system_states.
+ * @note    The associated function is invoked from interrupt context.
  *
  * @param[out] vtp      the @p VirtualTimer structure pointer
  * @param[in] time      the number of ticks before the operation timeouts, the

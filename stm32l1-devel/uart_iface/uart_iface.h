@@ -76,8 +76,10 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 
 extern WORKING_AREA(waUART_Thread, 512);
 msg_t UART_Thread(void* arg);
-#define IHU_UART (BaseChannel*)&SD3
-#define DBG_UART (BaseChannel*)&SD1
+#define IHU_UART (BaseSequentialStream*)&SD3
+#define IHU_UART_DEV	&SD3
+#define DBG_UART (BaseSequentialStream*)&SD1
+#define DBG_UART_DEV	&SD1
 
 #define UART_COMM_IDLE 0
 #define UART_COMM_READ_COMMAND 1

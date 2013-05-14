@@ -1,6 +1,6 @@
 /*
     ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+                 2011,2012,2013 Giovanni Di Sirio.
 
     This file is part of ChibiOS/RT.
 
@@ -16,13 +16,6 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-                                      ---
-
-    A special exception to the GPL can be applied should you wish to distribute
-    a combined work that includes ChibiOS/RT, without being obliged to provide
-    the source code for any proprietary components. See the file exception.txt
-    for full details of how and when the exception can be applied.
 */
 
 /**
@@ -84,6 +77,8 @@
 /*===========================================================================*/
 
 #if !CH_DBG_SYSTEM_STATE_CHECK
+#define dbg_enter_lock()
+#define dbg_leave_lock()
 #define dbg_check_disable()
 #define dbg_check_suspend()
 #define dbg_check_enable()
@@ -95,6 +90,9 @@
 #define dbg_check_leave_isr()
 #define chDbgCheckClassI();
 #define chDbgCheckClassS();
+#else
+#define dbg_enter_lock() (dbg_lock_cnt = 1)
+#define dbg_leave_lock() (dbg_lock_cnt = 0)
 #endif
 
 /*===========================================================================*/
@@ -144,7 +142,7 @@ extern ch_trace_buffer_t dbg_trace_buffer;
  * @{
  */
 /**
- * @brief   Function parameter check.
+ * @brief   Function parameters check.
  * @details If the condition check fails then the kernel panics and halts.
  * @note    The condition is tested only if the @p CH_DBG_ENABLE_CHECKS switch
  *          is specified in @p chconf.h else the macro does nothing.
@@ -155,15 +153,15 @@ extern ch_trace_buffer_t dbg_trace_buffer;
  * @api
  */
 #if !defined(chDbgCheck)
-#define chDbgCheck(c, func) {                                           \
-  if (!(c))                                                             \
-    chDbgPanic(__QUOTE_THIS(func)"()");                                 \
+#define chDbgCheck(c, func) {                                               \
+  if (!(c))                                                                 \
+    chDbgPanic(__QUOTE_THIS(func)"()");                                     \
 }
 #endif /* !defined(chDbgCheck) */
 /** @} */
 #else /* !CH_DBG_ENABLE_CHECKS */
-#define chDbgCheck(c, func) {                                           \
-  (void)(c), (void)__QUOTE_THIS(func)"()";                              \
+#define chDbgCheck(c, func) {                                               \
+  (void)(c), (void)__QUOTE_THIS(func)"()";                                  \
 }
 #endif /* !CH_DBG_ENABLE_CHECKS */
 
@@ -194,17 +192,15 @@ extern ch_trace_buffer_t dbg_trace_buffer;
  * @api
  */
 #if !defined(chDbgAssert)
-#define chDbgAssert(c, m, r) {                                          \
-  if (!(c))                                                             \
-    chDbgPanic(m);                                                      \
+#define chDbgAssert(c, m, r) {                                              \
+  if (!(c))                                                                 \
+    chDbgPanic(m);                                                          \
 }
 #endif /* !defined(chDbgAssert) */
 /** @} */
 #else /* !CH_DBG_ENABLE_ASSERTS */
 #define chDbgAssert(c, m, r) {(void)(c);}
 #endif /* !CH_DBG_ENABLE_ASSERTS */
-
-extern char *dbg_panic_msg;
 
 /*===========================================================================*/
 /* Panic related macros.                                                     */
@@ -220,6 +216,8 @@ extern char *dbg_panic_msg;
 extern "C" {
 #endif
 #if CH_DBG_SYSTEM_STATE_CHECK
+  extern cnt_t dbg_isr_cnt;
+  extern cnt_t dbg_lock_cnt;
   void dbg_check_disable(void);
   void dbg_check_suspend(void);
   void dbg_check_enable(void);
@@ -237,7 +235,8 @@ extern "C" {
   void dbg_trace(Thread *otp);
 #endif
 #if CH_DBG_ENABLED
-  void chDbgPanic(char *msg);
+  extern const char *dbg_panic_msg;
+  void chDbgPanic(const char *msg);
 #endif
 #ifdef __cplusplus
 }

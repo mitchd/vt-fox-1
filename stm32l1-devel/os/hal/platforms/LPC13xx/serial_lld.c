@@ -1,28 +1,17 @@
 /*
-    ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+    ChibiOS/RT - Copyright (C) 2006-2013 Giovanni Di Sirio
 
-    This file is part of ChibiOS/RT.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS/RT is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS/RT is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-                                      ---
-
-    A special exception to the GPL can be applied should you wish to distribute
-    a combined work that includes ChibiOS/RT, without being obliged to provide
-    the source code for any proprietary components. See the file exception.txt
-    for full details of how and when the exception can be applied.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -48,7 +37,7 @@ SerialDriver SD1;
 #endif
 
 /*===========================================================================*/
-/* Driver local variables.                                                   */
+/* Driver local variables and types.                                         */
 /*===========================================================================*/
 
 /** @brief Driver default configuration.*/
@@ -108,7 +97,7 @@ static void uart_deinit(LPC_UART_TypeDef *u) {
  * @param[in] err       UART LSR register value
  */
 static void set_error(SerialDriver *sdp, IOREG32 err) {
-  ioflags_t sts = 0;
+  flagsmask_t sts = 0;
 
   if (err & LSR_OVERRUN)
     sts |= SD_OVERRUN_ERROR;
@@ -119,7 +108,7 @@ static void set_error(SerialDriver *sdp, IOREG32 err) {
   if (err & LSR_BREAK)
     sts |= SD_BREAK_DETECTED;
   chSysLockFromIsr();
-  chIOAddFlagsI(sdp, sts);
+  chnAddFlagsI(sdp, sts);
   chSysUnlockFromIsr();
 }
 
@@ -146,12 +135,12 @@ static void serve_interrupt(SerialDriver *sdp) {
     case IIR_SRC_RX:
       chSysLockFromIsr();
       if (chIQIsEmptyI(&sdp->iqueue))
-        chIOAddFlagsI(sdp, IO_INPUT_AVAILABLE);
+        chnAddFlagsI(sdp, CHN_INPUT_AVAILABLE);
       chSysUnlockFromIsr();
       while (u->LSR & LSR_RBR_FULL) {
         chSysLockFromIsr();
         if (chIQPutI(&sdp->iqueue, u->RBR) < Q_OK)
-          chIOAddFlagsI(sdp, SD_OVERRUN_ERROR);
+          chnAddFlagsI(sdp, SD_OVERRUN_ERROR);
         chSysUnlockFromIsr();
       }
       break;
@@ -167,7 +156,7 @@ static void serve_interrupt(SerialDriver *sdp) {
           if (b < Q_OK) {
             u->IER &= ~IER_THRE;
             chSysLockFromIsr();
-            chIOAddFlagsI(sdp, IO_OUTPUT_EMPTY);
+            chnAddFlagsI(sdp, CHN_OUTPUT_EMPTY);
             chSysUnlockFromIsr();
             break;
           }
@@ -193,7 +182,7 @@ static void preload(SerialDriver *sdp) {
     do {
       msg_t b = chOQGetI(&sdp->oqueue);
       if (b < Q_OK) {
-        chIOAddFlagsI(sdp, IO_OUTPUT_EMPTY);
+        chnAddFlagsI(sdp, CHN_OUTPUT_EMPTY);
         return;
       }
       u->THR = b;

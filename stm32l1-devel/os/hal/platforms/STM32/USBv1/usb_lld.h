@@ -1,28 +1,17 @@
 /*
-    ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+    ChibiOS/RT - Copyright (C) 2006-2013 Giovanni Di Sirio
 
-    This file is part of ChibiOS/RT.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS/RT is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS/RT is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-                                      ---
-
-    A special exception to the GPL can be applied should you wish to distribute
-    a combined work that includes ChibiOS/RT, without being obliged to provide
-    the source code for any proprietary components. See the file exception.txt
-    for full details of how and when the exception can be applied.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -64,7 +53,7 @@
  * @note    The default is @p TRUE.
  */
 #if !defined(STM32_USB_USE_USB1) || defined(__DOXYGEN__)
-#define STM32_USB_USE_USB1                  TRUE
+#define STM32_USB_USE_USB1                  FALSE
 #endif
 
 /**
@@ -78,7 +67,7 @@
  * @brief   USB1 interrupt priority level setting.
  */
 #if !defined(STM32_USB_USB1_HP_IRQ_PRIORITY) || defined(__DOXYGEN__)
-#define STM32_USB_USB1_HP_IRQ_PRIORITY      6
+#define STM32_USB_USB1_HP_IRQ_PRIORITY      13
 #endif
 
 /**
@@ -100,6 +89,16 @@
 #error "USB driver activated but no USB peripheral assigned"
 #endif
 
+#if STM32_USB_USE_USB1 &&                                                \
+    !CORTEX_IS_VALID_KERNEL_PRIORITY(STM32_USB_USB1_HP_IRQ_PRIORITY)
+#error "Invalid IRQ priority assigned to USB HP"
+#endif
+
+#if STM32_USB_USE_USB1 &&                                                \
+    !CORTEX_IS_VALID_KERNEL_PRIORITY(STM32_USB_USB1_LP_IRQ_PRIORITY)
+#error "Invalid IRQ priority assigned to USB LP"
+#endif
+
 #if STM32_USBCLK != 48000000
 #error "the USB driver requires a 48MHz clock"
 #endif
@@ -109,13 +108,13 @@
 /*===========================================================================*/
 
 /**
- * @brief   Type of an endpoint state structure.
+ * @brief   Type of an IN endpoint state structure.
  */
 typedef struct {
   /**
-   * @brief   Pointer to the transmission buffer.
+   * @brief   Buffer mode, queue or linear.
    */
-  const uint8_t                 *txbuf;
+  bool_t                        txqueued;
   /**
    * @brief   Requested transmit transfer size.
    */
@@ -124,20 +123,31 @@ typedef struct {
    * @brief   Transmitted bytes so far.
    */
   size_t                        txcnt;
+  union {
+    struct {
+      /**
+       * @brief   Pointer to the transmission linear buffer.
+       */
+      const uint8_t             *txbuf;
+    } linear;
+    struct {
+      /**
+       * @brief   Pointer to the output queue.
+       */
+      OutputQueue               *txqueue;
+    } queue;
+    /* End of the mandatory fields.*/
+  } mode;
 } USBInEndpointState;
 
 /**
- * @brief   Type of an endpoint state structure.
+ * @brief   Type of an OUT endpoint state structure.
  */
 typedef struct {
   /**
-   * @brief   Number of packets to receive.
+   * @brief   Buffer mode, queue or linear.
    */
-  uint16_t                      rxpkts;
-  /**
-   * @brief   Pointer to the receive buffer.
-   */
-  uint8_t                       *rxbuf;
+  bool_t                        rxqueued;
   /**
    * @brief   Requested receive transfer size.
    */
@@ -146,6 +156,25 @@ typedef struct {
    * @brief   Received bytes so far.
    */
   size_t                        rxcnt;
+  union {
+    struct {
+      /**
+       * @brief   Pointer to the receive linear buffer.
+       */
+      uint8_t                   *rxbuf;
+    } linear;
+    struct {
+      /**
+       * @brief   Pointer to the input queue.
+       */
+      InputQueue               *rxqueue;
+    } queue;
+  } mode;
+  /* End of the mandatory fields.*/
+  /**
+   * @brief   Number of packets to receive.
+   */
+  uint16_t                      rxpkts;
 } USBOutEndpointState;
 
 /**
@@ -194,19 +223,26 @@ typedef struct {
   uint16_t                      out_maxsize;
   /**
    * @brief   @p USBEndpointState associated to the IN endpoint.
-   * @details This structure maintains the state of the IN endpoint when
-   *          the endpoint is not in packet mode. Endpoints configured in
-   *          packet mode must set this field to @p NULL.
+   * @details This structure maintains the state of the IN endpoint.
    */
   USBInEndpointState            *in_state;
   /**
    * @brief   @p USBEndpointState associated to the OUT endpoint.
-   * @details This structure maintains the state of the OUT endpoint when
-   *          the endpoint is not in packet mode. Endpoints configured in
-   *          packet mode must set this field to @p NULL.
+   * @details This structure maintains the state of the OUT endpoint.
    */
   USBOutEndpointState           *out_state;
   /* End of the mandatory fields.*/
+  /**
+   * @brief   Reserved field, not currently used.
+   * @note    Initialize this field to 1 in order to be forward compatible.
+   */
+  uint16_t                      ep_buffers;
+  /**
+   * @brief   Pointer to a buffer for setup packets.
+   * @details Setup packets require a dedicated 8-bytes buffer, set this
+   *          field to @p NULL for non-control endpoints.
+   */
+  uint8_t                       *setup_buf;
 } USBEndpointConfig;
 
 /**
@@ -249,11 +285,6 @@ struct USBDriver {
    */
   const USBConfig               *config;
   /**
-   * @brief   Field available to user, it can be used to associate an
-   *          application-defined handler to the USB driver.
-   */
-  void                          *param;
-  /**
    * @brief   Bit map of the transmitting IN endpoints.
    */
   uint16_t                      transmitting;
@@ -265,6 +296,20 @@ struct USBDriver {
    * @brief   Active endpoints configurations.
    */
   const USBEndpointConfig       *epc[USB_MAX_ENDPOINTS + 1];
+  /**
+   * @brief   Fields available to user, it can be used to associate an
+   *          application-defined handler to an IN endpoint.
+   * @note    The base index is one, the endpoint zero does not have a
+   *          reserved element in this array.
+   */
+  void                          *in_params[USB_MAX_ENDPOINTS];
+  /**
+   * @brief   Fields available to user, it can be used to associate an
+   *          application-defined handler to an OUT endpoint.
+   * @note    The base index is one, the endpoint zero does not have a
+   *          reserved element in this array.
+   */
+  void                          *out_params[USB_MAX_ENDPOINTS];
   /**
    * @brief   Endpoint 0 state.
    */
@@ -310,15 +355,6 @@ struct USBDriver {
 /*===========================================================================*/
 /* Driver macros.                                                            */
 /*===========================================================================*/
-
-/**
- * @brief   Fetches a 16 bits word value from an USB message.
- *
- * @param[in] p         pointer to the 16 bits word
- *
- * @notapi
- */
-#define usb_lld_fetch_word(p) (*(uint16_t *)(p))
 
 /**
  * @brief   Returns the current frame number.
@@ -382,14 +418,8 @@ extern "C" {
   usbepstatus_t usb_lld_get_status_in(USBDriver *usbp, usbep_t ep);
   usbepstatus_t usb_lld_get_status_out(USBDriver *usbp, usbep_t ep);
   void usb_lld_read_setup(USBDriver *usbp, usbep_t ep, uint8_t *buf);
-  size_t usb_lld_read_packet_buffer(USBDriver *usbp, usbep_t ep,
-                                    uint8_t *buf, size_t n);
-  void usb_lld_write_packet_buffer(USBDriver *usbp, usbep_t ep,
-                                   const uint8_t *buf, size_t n);
-  void usb_lld_prepare_receive(USBDriver *usbp, usbep_t ep,
-                               uint8_t *buf, size_t n);
-  void usb_lld_prepare_transmit(USBDriver *usbp, usbep_t ep,
-                                const uint8_t *buf, size_t n);
+  void usb_lld_prepare_receive(USBDriver *usbp, usbep_t ep);
+  void usb_lld_prepare_transmit(USBDriver *usbp, usbep_t ep);
   void usb_lld_start_out(USBDriver *usbp, usbep_t ep);
   void usb_lld_start_in(USBDriver *usbp, usbep_t ep);
   void usb_lld_stall_out(USBDriver *usbp, usbep_t ep);

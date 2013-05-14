@@ -1,6 +1,6 @@
 /*
     ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+                 2011,2012,2013 Giovanni Di Sirio.
 
     This file is part of ChibiOS/RT.
 
@@ -16,13 +16,6 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-                                      ---
-
-    A special exception to the GPL can be applied should you wish to distribute
-    a combined work that includes ChibiOS/RT, without being obliged to provide
-    the source code for any proprietary components. See the file exception.txt
-    for full details of how and when the exception can be applied.
 */
 
 /**
@@ -115,7 +108,7 @@ void dbg_check_lock(void) {
 
   if ((dbg_isr_cnt != 0) || (dbg_lock_cnt != 0))
     chDbgPanic("SV#4");
-  dbg_lock_cnt = 1;
+  dbg_enter_lock();
 }
 
 /**
@@ -127,7 +120,7 @@ void dbg_check_unlock(void) {
 
   if ((dbg_isr_cnt != 0) || (dbg_lock_cnt <= 0))
     chDbgPanic("SV#5");
-  dbg_lock_cnt = 0;
+  dbg_leave_lock();
 }
 
 /**
@@ -139,7 +132,7 @@ void dbg_check_lock_from_isr(void) {
 
   if ((dbg_isr_cnt <= 0) || (dbg_lock_cnt != 0))
     chDbgPanic("SV#6");
-  dbg_lock_cnt = 1;
+  dbg_enter_lock();
 }
 
 /**
@@ -151,7 +144,7 @@ void dbg_check_unlock_from_isr(void) {
 
   if ((dbg_isr_cnt <= 0) || (dbg_lock_cnt <= 0))
     chDbgPanic("SV#7");
-  dbg_lock_cnt = 0;
+  dbg_leave_lock();
 }
 
 /**
@@ -261,14 +254,14 @@ void dbg_trace(Thread *otp) {
  * @details This pointer is meant to be accessed through the debugger, it is
  *          written once and then the system is halted.
  */
-char *dbg_panic_msg;
+const char *dbg_panic_msg;
 
 /**
  * @brief   Prints a panic message on the console and then halts the system.
  *
  * @param[in] msg       the pointer to the panic message string
  */
-void chDbgPanic(char *msg) {
+void chDbgPanic(const char *msg) {
 
   dbg_panic_msg = msg;
   chSysHalt();

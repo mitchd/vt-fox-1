@@ -1,6 +1,6 @@
 /*
     ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+                 2011,2012,2013 Giovanni Di Sirio.
 
     This file is part of ChibiOS/RT.
 
@@ -16,18 +16,11 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-                                      ---
-
-    A special exception to the GPL can be applied should you wish to distribute
-    a combined work that includes ChibiOS/RT, without being obliged to provide
-    the source code for any proprietary components. See the file exception.txt
-    for full details of how and when the exception can be applied.
 */
 
 /**
  * @defgroup IO HAL
- * @brief Hardware Abstraction Layer.
+ * @brief   Hardware Abstraction Layer.
  * @details Under ChibiOS/RT the set of the various device driver interfaces
  * is called the HAL subsystem: Hardware Abstraction Layer. The HAL is the
  * abstract interface between ChibiOS/RT application and hardware.
@@ -80,7 +73,7 @@
 
 /**
  * @defgroup HAL_CONF Configuration
- * @brief @ref HAL Configuration.
+ * @brief   HAL Configuration.
  * @details The file @p halconf.h contains the high level settings for all
  * the drivers supported by the HAL. The low level, platform dependent,
  * settings are contained in the @p mcuconf.h file instead and are describe

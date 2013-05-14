@@ -65,15 +65,14 @@ int main(void) {
    * Activates the serial driver 3.
    * PB10(TX) and PB11(RX) are routed to USART3.
    */
-  sdStart(&SD3, NULL);
+  sdStart(IHU_UART_DEV, NULL);
   palSetPadMode(GPIOB, 10, PAL_MODE_ALTERNATE(7));
   palSetPadMode(GPIOB, 11, PAL_MODE_ALTERNATE(7));
 
   /* Activate serial driver 4 for debug
    *  PA9 (TX) and PA10(RX)
-   *
    */
-  sdStart(&SD1,NULL);
+  sdStart(DBG_UART_DEV, NULL);
   palSetPadMode(GPIOA, 9 , PAL_MODE_ALTERNATE(7));
   palSetPadMode(GPIOA, 10, PAL_MODE_ALTERNATE(7));
   /*
@@ -84,10 +83,13 @@ int main(void) {
 
   configureSPIFlash();
 
-  chThdCreateStatic(waCamera_Thread, sizeof(waCamera_Thread), HIGHPRIO,
-                    cameraControlThread,NULL);
+  //chThdCreateStatic(waCamera_Thread, sizeof(waCamera_Thread), HIGHPRIO,
+  //                  cameraControlThread,NULL);
 
   //Make this thread low priority
   chThdSetPriority( IDLEPRIO );
-  while (TRUE); 
+  while (TRUE){
+      chThdSleepMilliseconds(500); 
+      chprintf(IHU_UART,"This is a test\r\n");
+  }
 }

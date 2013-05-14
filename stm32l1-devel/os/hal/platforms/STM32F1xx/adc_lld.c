@@ -1,28 +1,17 @@
 /*
-    ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+    ChibiOS/RT - Copyright (C) 2006-2013 Giovanni Di Sirio
 
-    This file is part of ChibiOS/RT.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS/RT is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS/RT is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-                                      ---
-
-    A special exception to the GPL can be applied should you wish to distribute
-    a combined work that includes ChibiOS/RT, without being obliged to provide
-    the source code for any proprietary components. See the file exception.txt
-    for full details of how and when the exception can be applied.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -39,6 +28,10 @@
 #if HAL_USE_ADC || defined(__DOXYGEN__)
 
 /*===========================================================================*/
+/* Driver local definitions.                                                 */
+/*===========================================================================*/
+
+/*===========================================================================*/
 /* Driver exported variables.                                                */
 /*===========================================================================*/
 
@@ -48,7 +41,7 @@ ADCDriver ADCD1;
 #endif
 
 /*===========================================================================*/
-/* Driver local variables.                                                   */
+/* Driver local variables and types.                                         */
 /*===========================================================================*/
 
 /*===========================================================================*/
@@ -188,7 +181,7 @@ void adc_lld_stop(ADCDriver *adcp) {
  * @notapi
  */
 void adc_lld_start_conversion(ADCDriver *adcp) {
-  uint32_t mode, n;
+  uint32_t mode, n, cr2;
   const ADCConversionGroup *grpp = adcp->grpp;
 
   /* DMA setup.*/
@@ -210,7 +203,10 @@ void adc_lld_start_conversion(ADCDriver *adcp) {
 
   /* ADC setup.*/
   adcp->adc->CR1   = grpp->cr1 | ADC_CR1_SCAN;
-  adcp->adc->CR2   = grpp->cr2 | ADC_CR2_DMA | ADC_CR2_CONT | ADC_CR2_ADON;
+  cr2 = grpp->cr2 | ADC_CR2_DMA | ADC_CR2_ADON;
+  if ((cr2 & (ADC_CR2_EXTTRIG | ADC_CR2_JEXTTRIG)) == 0)
+    cr2 |= ADC_CR2_CONT;
+  adcp->adc->CR2   = grpp->cr2 | cr2;
   adcp->adc->SMPR1 = grpp->smpr1;
   adcp->adc->SMPR2 = grpp->smpr2;
   adcp->adc->SQR1  = grpp->sqr1;
@@ -218,7 +214,7 @@ void adc_lld_start_conversion(ADCDriver *adcp) {
   adcp->adc->SQR3  = grpp->sqr3;
 
   /* ADC start by writing ADC_CR2_ADON a second time.*/
-  adcp->adc->CR2   = grpp->cr2 | ADC_CR2_DMA | ADC_CR2_CONT | ADC_CR2_ADON;
+  adcp->adc->CR2   = cr2;
 }
 
 /**

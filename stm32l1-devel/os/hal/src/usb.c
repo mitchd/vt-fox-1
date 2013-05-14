@@ -1,6 +1,6 @@
 /*
     ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+                 2011,2012,2013 Giovanni Di Sirio.
 
     This file is part of ChibiOS/RT.
 
@@ -16,13 +16,6 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-                                      ---
-
-    A special exception to the GPL can be applied should you wish to distribute
-    a combined work that includes ChibiOS/RT, without being obliged to provide
-    the source code for any proprietary components. See the file exception.txt
-    for full details of how and when the exception can be applied.
 */
 
 /**
@@ -50,7 +43,7 @@
 /*===========================================================================*/
 
 /*===========================================================================*/
-/* Driver local variables.                                                   */
+/* Driver local variables and types.                                         */
 /*===========================================================================*/
 
 static const uint8_t zero_status[] = {0x00, 0x00};
@@ -132,7 +125,7 @@ static bool_t default_handler(USBDriver *usbp) {
     /* Handling descriptor requests from the host.*/
     dp = usbp->config->get_descriptor_cb(
            usbp, usbp->setup[3], usbp->setup[2],
-           usb_lld_fetch_word(&usbp->setup[4]));
+           usbFetchWord(&usbp->setup[4]));
     if (dp == NULL)
       return FALSE;
     usbSetupTransfer(usbp, (uint8_t *)dp->ud_string, dp->ud_size, NULL);
@@ -245,10 +238,14 @@ void usbInit(void) {
  * @init
  */
 void usbObjectInit(USBDriver *usbp) {
+  unsigned i;
 
   usbp->state        = USB_STOP;
   usbp->config       = NULL;
-  usbp->param        = NULL;
+  for (i = 0; i < USB_MAX_ENDPOINTS; i++) {
+    usbp->in_params[i]  = NULL;
+    usbp->out_params[i] = NULL;
+  }
   usbp->transmitting = 0;
   usbp->receiving    = 0;
 }
@@ -289,7 +286,8 @@ void usbStop(USBDriver *usbp) {
   chDbgCheck(usbp != NULL, "usbStop");
 
   chSysLock();
-  chDbgAssert((usbp->state == USB_STOP) || (usbp->state == USB_READY),
+  chDbgAssert((usbp->state == USB_STOP) || (usbp->state == USB_READY) ||
+              (usbp->state == USB_SELECTED) || (usbp->state == USB_ACTIVE),
               "usbStop(), #1", "invalid state");
   usb_lld_stop(usbp);
   usbp->state = USB_STOP;
@@ -320,10 +318,11 @@ void usbInitEndpointI(USBDriver *usbp, usbep_t ep,
               "usbEnableEndpointI(), #2", "already initialized");
 
   /* Logically enabling the endpoint in the USBDriver structure.*/
-  if (!(epcp->ep_mode & USB_EP_MODE_PACKET)) {
+  if (epcp->in_state != NULL)
     memset(epcp->in_state, 0, sizeof(USBInEndpointState));
+  if (epcp->out_state != NULL)
     memset(epcp->out_state, 0, sizeof(USBOutEndpointState));
-  }
+
   usbp->epc[ep] = epcp;
 
   /* Low level endpoint activation.*/
@@ -359,12 +358,117 @@ void usbDisableEndpointsI(USBDriver *usbp) {
 }
 
 /**
+ * @brief   Prepares for a receive transaction on an OUT endpoint.
+ * @post    The endpoint is ready for @p usbStartReceiveI().
+ * @note    This function can be called both in ISR and thread context.
+ *
+ * @param[in] usbp      pointer to the @p USBDriver object
+ * @param[in] ep        endpoint number
+ * @param[out] buf      buffer where to copy the received data
+ * @param[in] n         transaction size
+ *
+ * @special
+ */
+void usbPrepareReceive(USBDriver *usbp, usbep_t ep, uint8_t *buf, size_t n) {
+  USBOutEndpointState *osp = usbp->epc[ep]->out_state;
+
+  osp->rxqueued           = FALSE;
+  osp->mode.linear.rxbuf  = buf;
+  osp->rxsize             = n;
+  osp->rxcnt              = 0;
+
+  usb_lld_prepare_receive(usbp, ep);
+}
+
+/**
+ * @brief   Prepares for a transmit transaction on an IN endpoint.
+ * @post    The endpoint is ready for @p usbStartTransmitI().
+ * @note    This function can be called both in ISR and thread context.
+ * @note    The queue must contain at least the amount of data specified
+ *          as transaction size.
+ *
+ * @param[in] usbp      pointer to the @p USBDriver object
+ * @param[in] ep        endpoint number
+ * @param[in] buf       buffer where to fetch the data to be transmitted
+ * @param[in] n         transaction size
+ *
+ * @special
+ */
+void usbPrepareTransmit(USBDriver *usbp, usbep_t ep,
+                        const uint8_t *buf, size_t n) {
+  USBInEndpointState *isp = usbp->epc[ep]->in_state;
+
+  isp->txqueued           = FALSE;
+  isp->mode.linear.txbuf  = buf;
+  isp->txsize             = n;
+  isp->txcnt              = 0;
+
+  usb_lld_prepare_transmit(usbp, ep);
+}
+
+/**
+ * @brief   Prepares for a receive transaction on an OUT endpoint.
+ * @post    The endpoint is ready for @p usbStartReceiveI().
+ * @note    This function can be called both in ISR and thread context.
+ * @note    The queue must have enough free space to accommodate the
+ *          specified transaction size rounded to the next packet size
+ *          boundary. For example if the transaction size is 1 and the
+ *          packet size is 64 then the queue must have space for at least
+ *          64 bytes.
+ *
+ * @param[in] usbp      pointer to the @p USBDriver object
+ * @param[in] ep        endpoint number
+ * @param[in] iqp       input queue to be filled with incoming data
+ * @param[in] n         transaction size
+ *
+ * @special
+ */
+void usbPrepareQueuedReceive(USBDriver *usbp, usbep_t ep,
+                             InputQueue *iqp, size_t n) {
+  USBOutEndpointState *osp = usbp->epc[ep]->out_state;
+
+  osp->rxqueued           = TRUE;
+  osp->mode.queue.rxqueue = iqp;
+  osp->rxsize             = n;
+  osp->rxcnt              = 0;
+
+  usb_lld_prepare_receive(usbp, ep);
+}
+
+/**
+ * @brief   Prepares for a transmit transaction on an IN endpoint.
+ * @post    The endpoint is ready for @p usbStartTransmitI().
+ * @note    This function can be called both in ISR and thread context.
+ * @note    The transmit transaction size is equal to the data contained
+ *          in the queue.
+ *
+ * @param[in] usbp      pointer to the @p USBDriver object
+ * @param[in] ep        endpoint number
+ * @param[in] oqp       output queue to be fetched for outgoing data
+ * @param[in] n         transaction size
+ *
+ * @special
+ */
+void usbPrepareQueuedTransmit(USBDriver *usbp, usbep_t ep,
+                              OutputQueue *oqp, size_t n) {
+  USBInEndpointState *isp = usbp->epc[ep]->in_state;
+
+  isp->txqueued           = TRUE;
+  isp->mode.queue.txqueue = oqp;
+  isp->txsize             = n;
+  isp->txcnt              = 0;
+
+  usb_lld_prepare_transmit(usbp, ep);
+}
+
+/**
  * @brief   Starts a receive transaction on an OUT endpoint.
  * @post    The endpoint callback is invoked when the transfer has been
  *          completed.
  *
  * @param[in] usbp      pointer to the @p USBDriver object
  * @param[in] ep        endpoint number
+ *
  * @return              The operation status.
  * @retval FALSE        Operation started successfully.
  * @retval TRUE         Endpoint busy, operation not started.
@@ -391,6 +495,7 @@ bool_t usbStartReceiveI(USBDriver *usbp, usbep_t ep) {
  *
  * @param[in] usbp      pointer to the @p USBDriver object
  * @param[in] ep        endpoint number
+ *
  * @return              The operation status.
  * @retval FALSE        Operation started successfully.
  * @retval TRUE         Endpoint busy, operation not started.
@@ -415,6 +520,7 @@ bool_t usbStartTransmitI(USBDriver *usbp, usbep_t ep) {
  *
  * @param[in] usbp      pointer to the @p USBDriver object
  * @param[in] ep        endpoint number
+ *
  * @return              The operation status.
  * @retval FALSE        Endpoint stalled.
  * @retval TRUE         Endpoint busy, not stalled.
@@ -438,6 +544,7 @@ bool_t usbStallReceiveI(USBDriver *usbp, usbep_t ep) {
  *
  * @param[in] usbp      pointer to the @p USBDriver object
  * @param[in] ep        endpoint number
+ *
  * @return              The operation status.
  * @retval FALSE        Endpoint stalled.
  * @retval TRUE         Endpoint busy, not stalled.
@@ -524,7 +631,7 @@ void _usb_ep0setup(USBDriver *usbp, usbep_t ep) {
   /* Transfer preparation. The request handler must have populated
      correctly the fields ep0next, ep0n and ep0endcb using the macro
      usbSetupTransfer().*/
-  max = usb_lld_fetch_word(&usbp->setup[6]);
+  max = usbFetchWord(&usbp->setup[6]);
   /* The transfer size cannot exceed the specified amount.*/
   if (usbp->ep0n > max)
     usbp->ep0n = max;
@@ -533,15 +640,19 @@ void _usb_ep0setup(USBDriver *usbp, usbep_t ep) {
     if (usbp->ep0n > 0) {
       /* Starts the transmit phase.*/
       usbp->ep0state = USB_EP0_TX;
-      usb_lld_prepare_transmit(usbp, 0, usbp->ep0next, usbp->ep0n);
-      usb_lld_start_in(usbp, 0);
+      usbPrepareTransmit(usbp, 0, usbp->ep0next, usbp->ep0n);
+      chSysLockFromIsr();
+      usbStartTransmitI(usbp, 0);
+      chSysUnlockFromIsr();
     }
     else {
       /* No transmission phase, directly receiving the zero sized status
          packet.*/
       usbp->ep0state = USB_EP0_WAITING_STS;
-      usb_lld_prepare_receive(usbp, 0, NULL, 0);
-      usb_lld_start_out(usbp, 0);
+      usbPrepareReceive(usbp, 0, NULL, 0);
+      chSysLockFromIsr();
+      usbStartReceiveI(usbp, 0);
+      chSysUnlockFromIsr();
     }
   }
   else {
@@ -549,15 +660,19 @@ void _usb_ep0setup(USBDriver *usbp, usbep_t ep) {
     if (usbp->ep0n > 0) {
       /* Starts the receive phase.*/
       usbp->ep0state = USB_EP0_RX;
-      usb_lld_prepare_receive(usbp, 0, usbp->ep0next, usbp->ep0n);
-      usb_lld_start_out(usbp, 0);
+      usbPrepareReceive(usbp, 0, usbp->ep0next, usbp->ep0n);
+      chSysLockFromIsr();
+      usbStartReceiveI(usbp, 0);
+      chSysUnlockFromIsr();
     }
     else {
       /* No receive phase, directly sending the zero sized status
          packet.*/
       usbp->ep0state = USB_EP0_SENDING_STS;
-      usb_lld_prepare_transmit(usbp, 0, NULL, 0);
-      usb_lld_start_in(usbp, 0);
+      usbPrepareTransmit(usbp, 0, NULL, 0);
+      chSysLockFromIsr();
+      usbStartTransmitI(usbp, 0);
+      chSysUnlockFromIsr();
     }
   }
 }
@@ -578,21 +693,26 @@ void _usb_ep0in(USBDriver *usbp, usbep_t ep) {
   (void)ep;
   switch (usbp->ep0state) {
   case USB_EP0_TX:
-    max = usb_lld_fetch_word(&usbp->setup[6]);
-     /* If the transmitted size is less than the requested size and it is a
-        multiple of the maximum packet size then a zero size packet must be
-        transmitted.*/
-     if ((usbp->ep0n < max) &&
-         ((usbp->ep0n % usbp->epc[0]->in_maxsize) == 0)) {
-       usb_lld_prepare_transmit(usbp, 0, NULL, 0);
-       usb_lld_start_in(usbp, 0);
-       return;
-     }
-
-     /* Transmit phase over, receiving the zero sized status packet.*/
-     usbp->ep0state = USB_EP0_WAITING_STS;
-     usb_lld_prepare_receive(usbp, 0, NULL, 0);
-     usb_lld_start_out(usbp, 0);
+    max = usbFetchWord(&usbp->setup[6]);
+    /* If the transmitted size is less than the requested size and it is a
+       multiple of the maximum packet size then a zero size packet must be
+       transmitted.*/
+    if ((usbp->ep0n < max) && ((usbp->ep0n % usbp->epc[0]->in_maxsize) == 0)) {
+      usbPrepareTransmit(usbp, 0, NULL, 0);
+      chSysLockFromIsr();
+      usbStartTransmitI(usbp, 0);
+      chSysUnlockFromIsr();
+      usbp->ep0state = USB_EP0_WAITING_TX0;
+      return;
+    }
+    /* Falls into, it is intentional.*/
+  case USB_EP0_WAITING_TX0:
+    /* Transmit phase over, receiving the zero sized status packet.*/
+    usbp->ep0state = USB_EP0_WAITING_STS;
+    usbPrepareReceive(usbp, 0, NULL, 0);
+    chSysLockFromIsr();
+    usbStartReceiveI(usbp, 0);
+    chSysUnlockFromIsr();
     return;
   case USB_EP0_SENDING_STS:
     /* Status packet sent, invoking the callback if defined.*/
@@ -629,8 +749,10 @@ void _usb_ep0out(USBDriver *usbp, usbep_t ep) {
   case USB_EP0_RX:
     /* Receive phase over, sending the zero sized status packet.*/
     usbp->ep0state = USB_EP0_SENDING_STS;
-    usb_lld_prepare_transmit(usbp, 0, NULL, 0);
-    usb_lld_start_in(usbp, 0);
+    usbPrepareTransmit(usbp, 0, NULL, 0);
+    chSysLockFromIsr();
+    usbStartTransmitI(usbp, 0);
+    chSysUnlockFromIsr();
     return;
   case USB_EP0_WAITING_STS:
     /* Status packet received, it must be zero sized, invoking the callback

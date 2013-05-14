@@ -1,28 +1,17 @@
 /*
-    ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+    ChibiOS/RT - Copyright (C) 2006-2013 Giovanni Di Sirio
 
-    This file is part of ChibiOS/RT.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS/RT is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS/RT is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-                                      ---
-
-    A special exception to the GPL can be applied should you wish to distribute
-    a combined work that includes ChibiOS/RT, without being obliged to provide
-    the source code for any proprietary components. See the file exception.txt
-    for full details of how and when the exception can be applied.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -62,12 +51,12 @@ static char *_strtok(char *str, const char *delim, char **saveptr) {
   return *token ? token : NULL;
 }
 
-static void usage(BaseChannel *chp, char *p) {
+static void usage(BaseSequentialStream *chp, char *p) {
 
   chprintf(chp, "Usage: %s\r\n", p);
 }
 
-static void list_commands(BaseChannel *chp, const ShellCommand *scp) {
+static void list_commands(BaseSequentialStream *chp, const ShellCommand *scp) {
 
   while (scp->sc_name != NULL) {
     chprintf(chp, "%s ", scp->sc_name);
@@ -75,7 +64,7 @@ static void list_commands(BaseChannel *chp, const ShellCommand *scp) {
   }
 }
 
-static void cmd_info(BaseChannel *chp, int argc, char *argv[]) {
+static void cmd_info(BaseSequentialStream *chp, int argc, char *argv[]) {
 
   (void)argv;
   if (argc > 0) {
@@ -107,7 +96,7 @@ static void cmd_info(BaseChannel *chp, int argc, char *argv[]) {
 #endif
 }
 
-static void cmd_systime(BaseChannel *chp, int argc, char *argv[]) {
+static void cmd_systime(BaseSequentialStream *chp, int argc, char *argv[]) {
 
   (void)argv;
   if (argc > 0) {
@@ -126,7 +115,7 @@ static ShellCommand local_commands[] = {
   {NULL, NULL}
 };
 
-static bool_t cmdexec(const ShellCommand *scp, BaseChannel *chp,
+static bool_t cmdexec(const ShellCommand *scp, BaseSequentialStream *chp,
                       char *name, int argc, char *argv[]) {
 
   while (scp->sc_name != NULL) {
@@ -142,7 +131,7 @@ static bool_t cmdexec(const ShellCommand *scp, BaseChannel *chp,
 /**
  * @brief   Shell thread function.
  *
- * @param[in] p         pointer to a @p BaseChannel object
+ * @param[in] p         pointer to a @p BaseSequentialStream object
  * @return              Termination reason.
  * @retval RDY_OK       terminated by command.
  * @retval RDY_RESET    terminated by reset condition on the I/O channel.
@@ -150,7 +139,7 @@ static bool_t cmdexec(const ShellCommand *scp, BaseChannel *chp,
 static msg_t shell_thread(void *p) {
   int n;
   msg_t msg = RDY_OK;
-  BaseChannel *chp = ((ShellConfig *)p)->sc_channel;
+  BaseSequentialStream *chp = ((ShellConfig *)p)->sc_channel;
   const ShellCommand *scp = ((ShellConfig *)p)->sc_commands;
   char *lp, *cmd, *tokp, line[SHELL_MAX_LINE_LENGTH];
   char *args[SHELL_MAX_ARGUMENTS + 1];
@@ -163,10 +152,10 @@ static msg_t shell_thread(void *p) {
       chprintf(chp, "\r\nlogout");
       break;
     }
-    lp = _strtok(line, " \009", &tokp);
+    lp = _strtok(line, " \t", &tokp);
     cmd = lp;
     n = 0;
-    while ((lp = _strtok(NULL, " \009", &tokp)) != NULL) {
+    while ((lp = _strtok(NULL, " \t", &tokp)) != NULL) {
       if (n >= SHELL_MAX_ARGUMENTS) {
         chprintf(chp, "too many arguments\r\n");
         cmd = NULL;
@@ -252,19 +241,20 @@ Thread *shellCreateStatic(const ShellConfig *scp, void *wsp,
 /**
  * @brief   Reads a whole line from the input channel.
  *
- * @param[in] chp       pointer to a @p BaseChannel object
+ * @param[in] chp       pointer to a @p BaseSequentialStream object
  * @param[in] line      pointer to the line buffer
  * @param[in] size      buffer maximum length
  * @return              The operation status.
  * @retval TRUE         the channel was reset or CTRL-D pressed.
  * @retval FALSE        operation successful.
  */
-bool_t shellGetLine(BaseChannel *chp, char *line, unsigned size) {
+bool_t shellGetLine(BaseSequentialStream *chp, char *line, unsigned size) {
   char *p = line;
 
   while (TRUE) {
-    short c = (short)chIOGet(chp);
-    if (c < 0)
+    char c;
+
+    if (chSequentialStreamRead(chp, (uint8_t *)&c, 1) == 0)
       return TRUE;
     if (c == 4) {
       chprintf(chp, "^D");
@@ -272,9 +262,9 @@ bool_t shellGetLine(BaseChannel *chp, char *line, unsigned size) {
     }
     if (c == 8) {
       if (p != line) {
-        chIOPut(chp, (uint8_t)c);
-        chIOPut(chp, 0x20);
-        chIOPut(chp, (uint8_t)c);
+        chSequentialStreamPut(chp, c);
+        chSequentialStreamPut(chp, 0x20);
+        chSequentialStreamPut(chp, c);
         p--;
       }
       continue;
@@ -287,7 +277,7 @@ bool_t shellGetLine(BaseChannel *chp, char *line, unsigned size) {
     if (c < 0x20)
       continue;
     if (p < line + size - 1) {
-      chIOPut(chp, (uint8_t)c);
+      chSequentialStreamPut(chp, c);
       *p++ = (char)c;
     }
   }

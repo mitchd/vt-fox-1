@@ -1,6 +1,6 @@
 /*
     ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+                 2011,2012,2013 Giovanni Di Sirio.
 
     This file is part of ChibiOS/RT.
 
@@ -16,13 +16,6 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-                                      ---
-
-    A special exception to the GPL can be applied should you wish to distribute
-    a combined work that includes ChibiOS/RT, without being obliged to provide
-    the source code for any proprietary components. See the file exception.txt
-    for full details of how and when the exception can be applied.
 */
 
 /**
@@ -67,7 +60,7 @@ typedef struct {
  * @param[in] provider  memory provider function for the memory pool
  */
 #define _MEMORYPOOL_DATA(name, size, provider)                              \
-  {NULL, MEM_ALIGN_NEXT(size), provider}
+  {NULL, size, provider}
 
 /**
  * @brief Static memory pool initializer in hungry mode.
@@ -82,10 +75,50 @@ typedef struct {
 #define MEMORYPOOL_DECL(name, size, provider)                               \
   MemoryPool name = _MEMORYPOOL_DATA(name, size, provider)
 
+/**
+ * @name    Macro Functions
+ * @{
+ */
+/**
+ * @brief   Adds an object to a memory pool.
+ * @pre     The memory pool must be already been initialized.
+ * @pre     The added object must be of the right size for the specified
+ *          memory pool.
+ * @pre     The added object must be memory aligned to the size of
+ *          @p stkalign_t type.
+ * @note    This function is just an alias for @p chPoolFree() and has been
+ *          added for clarity.
+ *
+ * @param[in] mp        pointer to a @p MemoryPool structure
+ * @param[in] objp      the pointer to the object to be added
+ *
+ * @api
+ */
+#define chPoolAdd(mp, objp) chPoolFree(mp, objp)
+
+/**
+ * @brief   Adds an object to a memory pool.
+ * @pre     The memory pool must be already been initialized.
+ * @pre     The added object must be of the right size for the specified
+ *          memory pool.
+ * @pre     The added object must be memory aligned to the size of
+ *          @p stkalign_t type.
+ * @note    This function is just an alias for @p chPoolFree() and has been
+ *          added for clarity.
+ *
+ * @param[in] mp        pointer to a @p MemoryPool structure
+ * @param[in] objp      the pointer to the object to be added
+ *
+ * @iclass
+ */
+#define chPoolAddI(mp, objp) chPoolFreeI(mp, objp)
+/** @} */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
   void chPoolInit(MemoryPool *mp, size_t size, memgetfunc_t provider);
+  void chPoolLoadArray(MemoryPool *mp, void *p, size_t n);
   void *chPoolAllocI(MemoryPool *mp);
   void *chPoolAlloc(MemoryPool *mp);
   void chPoolFreeI(MemoryPool *mp, void *objp);
