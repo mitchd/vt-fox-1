@@ -36,7 +36,7 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #include "camera_iface.h"
 
 //Timer Configurationfor bus communications
-#define CLK_DELAY 640
+#define CLK_DELAY 640 
 static const GPTConfig gpt3cfg = {
   32000000,    /* 32MHz timer clock.*/
   NULL         /* Timer callback.*/
@@ -50,19 +50,19 @@ static const GPTConfig gpt3cfg = {
 //
 static const uint8_t cam_config[CONFIG_PAIRS][2] = {
   {CAM_CLKRC, 0x01},
-  {CAM_COM3, 0x00},
-  {CAM_COM7, 0x04},
+  {CAM_COM3, 0x00}, //enable scaling
+  {CAM_COM7, 0x04}, //RGB enabled
   {CAM_COM14, 0x00},
   {CAM_COM10, 0x02},  //VERY IMPORTANT VSYNC INVERT
   {CAM_RGB444, 0x00}, //Disable RGB444
-  {CAM_COM14, 0x00},
   {CAM_COM15, 0xD0}, //RGB565 output
   {CAM_SCALING_DCWCTR, 0x11},
   {CAM_SCALING_PCK_DIV, 0xF0},
-  {CAM_SCALING_PCK_DELAY, 0x02 },
+  {CAM_SCALING_PCK_DELAY, 0x00 },
   {CAM_SCALING_XSC, 0x3A },
-  {CAM_SCALING_YSC, 0x35 },
-  {CAM_ADVFH,0x01 }, //Insert 256 dummy lines between frames
+  {CAM_SCALING_YSC, 0x4A },
+  {CAM_MVFP, 0x31}, //Flip horizontally and vertically
+  {CAM_HREF, 0x04 | 0x04<<3 | 0x80}
 };
 
 
@@ -387,7 +387,6 @@ msg_t configureCam(void){
   //Configure the camera
   for( tmp = 0; tmp < CONFIG_PAIRS; tmp++ )
     cameraWriteCycle( cam_config[tmp][0], cam_config[tmp][1] );
-
   tmp = checkCameraSanity();
   //powerdownCam();
   return (msg_t)tmp;
@@ -402,16 +401,17 @@ void powerdownCam(){
 }
 
 msg_t setupSegment( uint8_t segment )
-{
+{ 
+ 
   uint8_t vstrt, vstop, vref;
   if( segment == 0 ){ //"Upper" Half of image
-    vstrt = 0x00;  //Row 0 to 239
-    vstop = 0x3B;
-    vref = 0x0C;
+    vstrt = 0x02;  //Row 10 to 250
+    vstop = 0x3E;
+    vref = 0x00 | 0x03 | 0x03<<2;
   }else{ //"Lower" Half of image
-    vstrt = 0x3C;  //Row 240 to 479
-    vstop = 0x77;
-    vref = 0x0C;
+    vstrt = 0x3F;  //Row 252 to 490
+    vstop = 0x7A;
+    vref = 0x00 | 0x00 | 0x03<<2;
   }
 
   //Write our window configuration to the control registers
@@ -443,34 +443,35 @@ void fifoGrabBytes( uint8_t *buf, uint32_t n ){
   uint32_t i = 0;
   for( i=0; i<n; i++ ){
     palClearPad( FIFO_CTL_PORT, FIFO_RCLK );
+    gptPolledDelay( &GPTD3, 5 );
     palSetPad( FIFO_CTL_PORT, FIFO_RCLK );
-    dataByte = (palReadPort( FIFO_DATA_PORT ) & 0x0F);
-    dataByte |= (palReadPort( FIFO_DATA_PORT ) & 0x3C0)>>2;
-    buf[i] = dataByte;
+    gptPolledDelay( &GPTD3, 5 );
+    buf[i] = (palReadPort(FIFO_DATA_PORT) & 0xFF);
   }
 }
 
 static void resetReadPointer(void){
   // ~RRST
   palClearPad( FIFO_CTL_PORT, FIFO_RRST );
-  //gptPolledDelay( &GPTD3, 10 );
+  gptPolledDelay( &GPTD3, 5 );
   palClearPad( FIFO_CTL_PORT, FIFO_RCLK );
-  //gptPolledDelay( &GPTD3, 10 );
+  gptPolledDelay( &GPTD3, 5 );
   palSetPad( FIFO_CTL_PORT, FIFO_RCLK );
-  //gptPolledDelay( &GPTD3, 10 );
+  gptPolledDelay( &GPTD3, 5 );
   // RRST High
   palSetPad( FIFO_CTL_PORT, FIFO_RRST );
-  //gptPolledDelay( &GPTD3, 10 );
+  gptPolledDelay( &GPTD3, 5 );
   palClearPad( FIFO_CTL_PORT, FIFO_RCLK );
-  //gptPolledDelay( &GPTD3, 10 );
+  gptPolledDelay( &GPTD3, 5 );
   palSetPad( FIFO_CTL_PORT, FIFO_RCLK );
-  //gptPolledDelay( &GPTD3, 10 );
+  gptPolledDelay( &GPTD3, 5 );
 }
 
 
 msg_t cameraControlThread(void* arg){
   const uint16_t IMG_WIDTH = 640;
   const uint16_t IMG_HEIGHT = 480;
+  const uint16_t NUM_READS = 30;
   prepareTimer();
   setupCamPort();
 
@@ -490,19 +491,17 @@ msg_t cameraControlThread(void* arg){
         //Reset the read pointer
         resetReadPointer();
         //VSYNC HIGH = Frame Transmitting (inverted vsync)
-        while( palReadPad( CAM_PORT2, CAM_VSYNC_OUT )==1 );
+        while( palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
         //Turn on WEN to capture the next frame
         palSetPad( FIFO_CTL_PORT, FIFO_WEN );
         //VSYNC Low = Beginning of Frame - WRST is pulled low to reset write reg
-  	chSysLockFromIsr();
-        while( palReadPad( CAM_PORT2, CAM_VSYNC_OUT )==0 );
-  	chSysUnlockFromIsr();
+        while( !palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
         //Wait until VSYNC goes low again
-        while( palReadPad( CAM_PORT2, CAM_VSYNC_OUT )==1 );
+        while( palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
         //Disable WEN
         palClearPad( FIFO_CTL_PORT, FIFO_WEN );
-        uint8_t bulk_reads;
-        for( bulk_reads=0; bulk_reads < IMG_HEIGHT/8/2; bulk_reads++ ){
+        uint16_t bulk_reads;
+        for( bulk_reads=0; bulk_reads < NUM_READS; bulk_reads++ ){
           fifoGrabBytes( pixelData, IMG_WIDTH*2*8 );
           //convert_rows( pixelData );
           sdWrite( IHU_UART_DEV, &pixelData[0], IMG_WIDTH*2*8 );

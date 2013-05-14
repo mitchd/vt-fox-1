@@ -83,13 +83,10 @@ int main(void) {
 
   configureSPIFlash();
 
-  //chThdCreateStatic(waCamera_Thread, sizeof(waCamera_Thread), HIGHPRIO,
-  //                  cameraControlThread,NULL);
+  chThdCreateStatic(waCamera_Thread, sizeof(waCamera_Thread), HIGHPRIO,
+                    cameraControlThread,NULL);
 
   //Make this thread low priority
   chThdSetPriority( IDLEPRIO );
-  while (TRUE){
-      chThdSleepMilliseconds(500); 
-      chprintf(IHU_UART,"This is a test\r\n");
-  }
+  while (TRUE);
 }
