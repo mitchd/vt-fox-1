@@ -42,7 +42,7 @@
 /*
  * HAL driver system settings.
  */
-#define STM32_NO_INIT                       FALSE
+#define STM32_NO_INIT                       TRUE 
 //16 MHz internal HSI Clock enabled
 #define STM32_HSI_ENABLED                   TRUE
 #define STM32_LSI_ENABLED                   FALSE
