@@ -42,14 +42,14 @@
 /*
  * HAL driver system settings.
  */
-#define STM32_NO_INIT                       TRUE 
+#define STM32_NO_INIT                       TRUE
 //16 MHz internal HSI Clock enabled
 #define STM32_HSI_ENABLED                   TRUE
-#define STM32_LSI_ENABLED                   FALSE
+#define STM32_LSI_ENABLED                   TRUE 
 #define STM32_HSE_ENABLED                   FALSE
 #define STM32_LSE_ENABLED                   FALSE
-#define STM32_ADC_CLOCK_ENABLED             FALSE
-#define STM32_USB_CLOCK_ENABLED             FALSE
+#define STM32_ADC_CLOCK_ENABLED             TRUE
+#define STM32_USB_CLOCK_ENABLED             TRUE
 #define STM32_MSIRANGE                      STM32_MSIRANGE_2M
 //Select the system clock as the PLL output
 #define STM32_SW                            STM32_SW_PLL
@@ -64,7 +64,7 @@
 #define STM32_MCOSEL                        STM32_MCOSEL_PLL
 #define STM32_MCOPRE                        STM32_MCOPRE_DIV2
 //Disable RTC
-#define STM32_RTCSEL                        STM32_RTCSEL_NOCLOCK
+#define STM32_RTCSEL                        STM32_RTCSEL_LSI
 #define STM32_RTCPRE                        STM32_RTCPRE_DIV2
 #define STM32_VOS                           STM32_VOS_1P8
 #define STM32_PVD_ENABLE                    FALSE
@@ -103,8 +103,8 @@
  * GPT driver system settings.
  */
 #define STM32_GPT_USE_TIM1                  FALSE
-#define STM32_GPT_USE_TIM2                  FALSE
-#define STM32_GPT_USE_TIM3                  TRUE
+#define STM32_GPT_USE_TIM2                  TRUE
+#define STM32_GPT_USE_TIM3                  FALSE 
 #define STM32_GPT_USE_TIM4                  FALSE
 #define STM32_GPT_USE_TIM5                  FALSE
 #define STM32_GPT_USE_TIM8                  FALSE
