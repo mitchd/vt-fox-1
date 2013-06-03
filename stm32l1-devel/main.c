@@ -87,7 +87,7 @@ int main(void) {
                     cameraControlThread,NULL);
 
   //Make this thread low priority
-  chThdSetPriority( IDLEPRIO );
+  //chThdSetPriority( IDLEPRIO );
   //
 
   //#define CLK_DELAY 640
