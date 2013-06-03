@@ -82,13 +82,13 @@ void setupSCCB(void){
 
 //Use this to turn on the timer
 static void prepareTimer(void){
-  gptStart(&GPTD2, &gpt3cfg);
+  gptStart(&GPTD3, &gpt3cfg);
   return;
 }
 
 //Don't forget to turn it off when we're done transferring data
 static void deactivateTimer(void){
-  gptStop(&GPTD2);
+  gptStop(&GPTD3);
   return;
 }
 
@@ -100,13 +100,13 @@ static void startCondition(void){
   palWritePad(CAM_CTL_PORT, CAM_SDA, 1);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
   //Wait
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   //Data Low
   palWritePad(CAM_CTL_PORT, CAM_SDA, 0);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   //Clock Low
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
 
   chSysUnlockFromIsr();
   return;
@@ -120,10 +120,10 @@ static void stopCondition(void){
   //Set SCL Low
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
 
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   //SCL High
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   //SDA High
   palWritePad(CAM_CTL_PORT, CAM_SDA, 1);
 
@@ -143,70 +143,70 @@ static void writeByte(uint8_t byte){
 
   chSysLockFromIsr();
   //MSB Bit 7
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
   palWritePad(CAM_CTL_PORT, CAM_SDA, (byte & 0x80)>>7);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
 
   //Bit 6
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
   palWritePad(CAM_CTL_PORT, CAM_SDA, (byte & 0x40)>>6);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
 
   //Bit 5
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
   palWritePad(CAM_CTL_PORT, CAM_SDA, (byte & 0x20)>>5);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
 
   //Bit 4
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
   palWritePad(CAM_CTL_PORT, CAM_SDA, (byte & 0x10)>>4);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
   
   //Bit 3
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
   palWritePad(CAM_CTL_PORT, CAM_SDA, (byte & 0x08)>>3);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
  
   //Bit 2
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
   palWritePad(CAM_CTL_PORT, CAM_SDA, (byte & 0x04)>>2);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
 
   //Bit 1
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
   palWritePad(CAM_CTL_PORT, CAM_SDA, (byte & 0x02)>>1);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
 
   //Bit 0
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
   palWritePad(CAM_CTL_PORT, CAM_SDA, (byte & 0x01) );
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
   
 
   //9th Don't Care bit
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   //Deassert don't care
   palSetPadMode(CAM_CTL_PORT, CAM_SDA, PAL_MODE_INPUT );
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   
   chSysUnlockFromIsr();
   //Re-assert the SDA
@@ -223,62 +223,62 @@ static uint8_t readByte(void){
   uint8_t byte = 0;
   palSetPadMode(CAM_CTL_PORT, CAM_SDA, PAL_MODE_INPUT );
   
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
 
   //MSB Bit 7
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<7;
 
   //Bit 6
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<6;
 
   //Bit 5
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<5;
 
   //Bit 4
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<4;
 
   //Bit 3
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<3;
 
   //Bit 2
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<2;
 
   //Bit 1
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) )<<1;
 
   //Bit 0
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   byte |= ( palReadPad(CAM_CTL_PORT, CAM_SDA) );
 
   //9th Don't Care Byte
@@ -287,9 +287,9 @@ static uint8_t readByte(void){
   palSetPadMode(CAM_CTL_PORT, CAM_SDA, PAL_MODE_OUTPUT_PUSHPULL |
                                        PAL_STM32_OSPEED_LOWEST );
   palWritePad(CAM_CTL_PORT, CAM_SDA, 1);  
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
-  gptPolledDelay(&GPTD2,CLK_DELAY);
+  gptPolledDelay(&GPTD3,CLK_DELAY);
   chSysUnlockFromIsr();
   //Re-assert the SDA
   palSetPadMode(CAM_CTL_PORT, CAM_SDA, PAL_MODE_OUTPUT_OPENDRAIN |
@@ -385,7 +385,7 @@ msg_t configureCam(void){
   idleState();
   //Poweron the camera
   wakeupCam();
-  gptPolledDelay(&GPTD2,PWR_DELAY);
+  gptPolledDelay(&GPTD3,PWR_DELAY);
   //Set Default Values
   cameraWriteCycle( CAM_COM7, 0x80 );
   cameraWriteCycle( CAM_CLKRC, 0x80 );
@@ -448,9 +448,9 @@ void fifoGrabBytes( uint8_t *buf, uint32_t n ){
   uint32_t i = 0;
   for( i=0; i<n; i++ ){
     palClearPad( FIFO_CTL_PORT, FIFO_RCLK );
-    gptPolledDelay( &GPTD2, FIFO_DELAY );
+    gptPolledDelay( &GPTD3, FIFO_DELAY );
     palSetPad( FIFO_CTL_PORT, FIFO_RCLK );
-    gptPolledDelay( &GPTD2, FIFO_DELAY );
+    gptPolledDelay( &GPTD3, FIFO_DELAY );
     buf[i] = (palReadPort(FIFO_DATA_PORT) & 0xFF);
   }
 }
@@ -458,18 +458,18 @@ void fifoGrabBytes( uint8_t *buf, uint32_t n ){
 static void resetReadPointer(void){
   // ~RRST
   palClearPad( FIFO_CTL_PORT, FIFO_RRST );
-  gptPolledDelay( &GPTD2, FIFO_DELAY );
+  gptPolledDelay( &GPTD3, FIFO_DELAY );
   palClearPad( FIFO_CTL_PORT, FIFO_RCLK );
-  gptPolledDelay( &GPTD2, FIFO_DELAY );
+  gptPolledDelay( &GPTD3, FIFO_DELAY );
   palSetPad( FIFO_CTL_PORT, FIFO_RCLK );
-  gptPolledDelay( &GPTD2, FIFO_DELAY );
+  gptPolledDelay( &GPTD3, FIFO_DELAY );
   // RRST High
   palSetPad( FIFO_CTL_PORT, FIFO_RRST );
-  gptPolledDelay( &GPTD2, FIFO_DELAY );
+  gptPolledDelay( &GPTD3, FIFO_DELAY );
   palClearPad( FIFO_CTL_PORT, FIFO_RCLK );
-  gptPolledDelay( &GPTD2, FIFO_DELAY );
+  gptPolledDelay( &GPTD3, FIFO_DELAY );
   palSetPad( FIFO_CTL_PORT, FIFO_RCLK );
-  gptPolledDelay( &GPTD2, FIFO_DELAY );
+  gptPolledDelay( &GPTD3, FIFO_DELAY );
 }
 
 
@@ -491,7 +491,7 @@ msg_t cameraControlThread(void* arg){
   //Wakeup Camera
   wakeupCam();
   //Wait 1ms per datasheet
-  gptPolledDelay( &GPTD2, PWR_DELAY );
+  gptPolledDelay( &GPTD3, PWR_DELAY );
   if( success == RDY_OK ){  
     //Ensure WEN is disabled
     palClearPad( FIFO_CTL_PORT, FIFO_WEN );
@@ -524,7 +524,7 @@ msg_t cameraControlThread(void* arg){
     //Wakeup Cam
     wakeupCam();
     //Wait 1sm per datasheet
-    gptPolledDelay( &GPTD2, PWR_DELAY );
+    gptPolledDelay( &GPTD3, PWR_DELAY );
     if( setupSegment( 2 ) != RDY_OK ){
       //segmentNumber--;
       chprintf(IHU_UART,"SETUP FAILED\r\n");
