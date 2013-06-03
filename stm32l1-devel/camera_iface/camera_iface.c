@@ -37,7 +37,7 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 
 //Timer Configurationfor bus communications
 #define CLK_DELAY 640
-#define FIFO_DELAY 5
+#define FIFO_DELAY 5 
 #define PWR_DELAY 32000
 static const GPTConfig gpt3cfg = {
   32000000,    /* 32MHz timer clock.*/
@@ -46,7 +46,7 @@ static const GPTConfig gpt3cfg = {
 
 //Configuration addresses and bytes ensure CONFIG_PAIRS reflects the number
 //of configuration pairs needed!
-#define CONFIG_PAIRS 16
+#define CONFIG_PAIRS 13
 //
 //30 FPS VGA RGB565 Mode
 //
@@ -477,82 +477,58 @@ msg_t cameraControlThread(void* arg){
   const uint16_t IMG_WIDTH = 640;
   const uint16_t IMG_HEIGHT = 480;
   const uint16_t NUM_READS = 30;
-  chprintf(IHU_UART,"Setup Timer\r\n");
+  //chprintf(IHU_UART,"Setup Timer\r\n");
   prepareTimer();
-  chprintf(IHU_UART,"Setup Cam Port\r\n");
+  //chprintf(IHU_UART,"Setup Cam Port\r\n");
   setupCamPort();
 
   uint8_t pixelData[IMG_WIDTH*2*8];
-  chprintf(IHU_UART,"Setup SCCB Interface\r\n");
+  //chprintf(IHU_UART,"Setup SCCB Interface\r\n");
   setupSCCB();
 
-  chprintf(IHU_UART,"Configure Camera\r\n");
+  //chprintf(IHU_UART,"Configure Camera\r\n");
   msg_t success = configureCam();
-  //Wakeup Camera
-  wakeupCam();
-  //Wait 1ms per datasheet
-  gptPolledDelay( &GPTD3, PWR_DELAY );
-  if( success == RDY_OK ){  
-    //Ensure WEN is disabled
-    palClearPad( FIFO_CTL_PORT, FIFO_WEN );
-    //jpeg_init();
-    if( setupSegment( 1 ) != RDY_OK ){
-      //segmentNumber--;
-      chprintf(IHU_UART,"SETUP FAILED\r\n");
-    }else{
-      //Reset the read pointer
-      resetReadPointer();
-      //VSYNC HIGH = Frame Transmitting (inverted vsync)
-      while( palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
-      //Turn on WEN to capture the next frame
-      palSetPad( FIFO_CTL_PORT, FIFO_WEN );
-      //VSYNC Low = Beginning of Frame - WRST is pulled low to reset write reg
-      while( !palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
-      //Wait until VSYNC goes low again
-      while( palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
-      //Disable WEN
-      palClearPad( FIFO_CTL_PORT, FIFO_WEN );
-      //Poweroff cam
-      //powerdownCam();
-      uint16_t bulk_reads;
-      for( bulk_reads=0; bulk_reads < NUM_READS; bulk_reads++ ){
-        fifoGrabBytes( pixelData, IMG_WIDTH*2*8 );
-        //convert_rows( pixelData );
-        sdWrite( IHU_UART_DEV, &pixelData[0], IMG_WIDTH*2*8 );
-      }
-    }
-    //Wakeup Cam
+  uint8_t segment;
+  for( segment = 0; segment < 2; segment++ )
+  {
+    //Wakeup Camera
     wakeupCam();
-    //Wait 1sm per datasheet
+    //Wait 1ms per datasheet
     gptPolledDelay( &GPTD3, PWR_DELAY );
-    if( setupSegment( 2 ) != RDY_OK ){
-      //segmentNumber--;
-      chprintf(IHU_UART,"SETUP FAILED\r\n");
-    }else{
-      //Reset the read pointer
-      resetReadPointer();
-      //VSYNC HIGH = Frame Transmitting (inverted vsync)
-      while( palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
-      //Turn on WEN to capture the next frame
-      palSetPad( FIFO_CTL_PORT, FIFO_WEN );
-      //VSYNC Low = Beginning of Frame - WRST is pulled low to reset write reg
-      while( !palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
-      //Wait until VSYNC goes low again
-      while( palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
-      //Disable WEN
+    if( success == RDY_OK ){  
+      //Ensure WEN is disabled
       palClearPad( FIFO_CTL_PORT, FIFO_WEN );
-      //Poweroff Cam
-      //powerdownCam();
-      uint16_t bulk_reads;
-      for( bulk_reads=0; bulk_reads < NUM_READS; bulk_reads++ ){
-        fifoGrabBytes( pixelData, IMG_WIDTH*2*8 );
-        //convert_rows( pixelData );
-        sdWrite( IHU_UART_DEV, &pixelData[0], IMG_WIDTH*2*8 );
+      //jpeg_init();
+      if( setupSegment( segment ) != RDY_OK ){
+        //segmentNumber--;
+        chprintf(IHU_UART,"SETUP FAILED\r\n");
+      }else{
+        //Reset the read pointer
+        resetReadPointer();
+        //VSYNC HIGH = Frame Transmitting (inverted vsync)
+        while( palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
+        //Turn on WEN to capture the next frame
+        palSetPad( FIFO_CTL_PORT, FIFO_WEN );
+        //VSYNC Low = Beginning of Frame - WRST is pulled low to reset write reg
+        while( !palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
+        //Wait until VSYNC goes low again
+        while( palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
+        //VSYNC Low = Beginning of Frame - WRST is pulled low to reset write reg
+        while( !palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
+        //Wait until VSYNC goes low again
+        while( palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
+        //Disable WEN
+        palClearPad( FIFO_CTL_PORT, FIFO_WEN );
+        //Poweroff cam
+        //powerdownCam();
+        uint16_t bulk_reads;
+        for( bulk_reads=0; bulk_reads < NUM_READS; bulk_reads++ ){
+          fifoGrabBytes( pixelData, IMG_WIDTH*2*8 );
+          //convert_rows( pixelData );
+          sdWrite( IHU_UART_DEV, &pixelData[0], IMG_WIDTH*2*8 );
+        }
       }
     }
-    //jpeg_close();
-  }else{
-    chprintf(IHU_UART,"SETUP FAILED\r\n");
   }
   while(TRUE); 
 }
