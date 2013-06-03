@@ -132,7 +132,7 @@ void hal_lld_init(void) {
  *
  * @special
  */
-#if defined(STM32L1XX_MD) || defined(__DOXYGEN__)
+#if defined(STM32L1XX_MD) || defined(STM32L1XX_HD) || defined(__DOXYGEN__)
 /**
  * @brief   Clocks and internal voltage initialization.
  */

@@ -87,9 +87,21 @@ int main(void) {
                     cameraControlThread,NULL);
 
   //Make this thread low priority
-  //chThdSetPriority( IDLEPRIO );
+  chThdSetPriority( IDLEPRIO );
+  //
+
+  //#define CLK_DELAY 640
+  //#define FIFO_DELAY 5
+  //#define PWR_DELAY 32000
+  //static const GPTConfig gpt3cfg = {
+  //  32000000,    /* 32MHz timer clock.*/
+  //  NULL         /* Timer callback.*/
+  //};
+  //gptStart(&GPTD3, &gpt3cfg);
+  //const uint32_t delay = 32000000/4; 
   while (TRUE){
-     chThdSleepMilliseconds(1000);
-     chprintf(IHU_UART,"MAIN\r\n");
+     //chThdSleepMilliseconds(500);
+     //gptPolledDelay(&GPTD3,delay);
+     //chprintf(IHU_UART,"MAIN\r\n");
   }
 }
