@@ -44,7 +44,7 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #include "chprintf.h"
 
 //WORKING_AREA(waUART_Thread, 512);
-WORKING_AREA(waCamera_Thread, 10240+3*1024);
+WORKING_AREA(waCamera_Thread, 10240+5*1024);
 
 /*
  * Application entry point.

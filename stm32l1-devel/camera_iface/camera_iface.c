@@ -46,10 +46,12 @@ static const GPTConfig gpt3cfg = {
 
 //Configuration addresses and bytes ensure CONFIG_PAIRS reflects the number
 //of configuration pairs needed!
-#define CONFIG_PAIRS 13
+#define CONFIG_PAIRS 16
 //
 //30 FPS VGA YUV Mode
 //
+#define HSTART (158+10) //Stole these magic numbers from the kernel driver
+#define HSTOP (14+10)
 static const uint8_t cam_config[CONFIG_PAIRS][2] = {
   {CAM_CLKRC, 0x01},
   {CAM_COM3, 0x00}, //enable scaling
@@ -64,9 +66,10 @@ static const uint8_t cam_config[CONFIG_PAIRS][2] = {
   {CAM_SCALING_XSC, 0x3A },
   {CAM_SCALING_YSC, 0x4A },
   {CAM_MVFP, 0x31}, //Flip horizontally and vertically
-//  {CAM_HREF, 0x04 | 0x04<<3 | 0x80}, //Setup the Horizontal window
-//  {CAM_HSTART, 0x0E},  //Columns 116 through 756
-//  {CAM_HSTOP, 0x3E}
+  //Stole some magic from the linux driver
+  {CAM_HREF, (HSTART & 0x7) | ((HSTOP & 0x7)<<3) | 0xC0},
+  {CAM_HSTART, HSTART>>3 & 0xFF}, 
+  {CAM_HSTOP, HSTOP>>3 & 0xFF}
 };
 
 
@@ -346,12 +349,12 @@ void setupCamPort(void){
   palSetPadMode(FIFO_CTL_PORT, FIFO_WEN, PAL_MODE_OUTPUT_PUSHPULL);
   palClearPad(FIFO_CTL_PORT, FIFO_WEN);
   palSetPadMode(FIFO_CTL_PORT, FIFO_RRST, PAL_MODE_OUTPUT_PUSHPULL);
-  palSetPad(FIFO_CTL_PORT, FIFO_RRST);
+
   palSetPadMode(FIFO_CTL_PORT, FIFO_OE, PAL_MODE_OUTPUT_PUSHPULL);
   palClearPad(FIFO_CTL_PORT, FIFO_OE);
   palSetPadMode(FIFO_CTL_PORT, FIFO_RCLK, PAL_MODE_OUTPUT_PUSHPULL);
   palSetPad(FIFO_CTL_PORT, FIFO_RCLK);
-  //powerdownCam();
+  powerdownCam();
   return;
 }
 
@@ -368,7 +371,6 @@ msg_t checkCameraSanity(void){
       return -1;
     }
   }
-
   return RDY_OK;
 }
 
@@ -384,10 +386,17 @@ msg_t configureCam(void){
   cameraWriteCycle( CAM_COM7, 0x80 );
   cameraWriteCycle( CAM_CLKRC, 0x80 );
   //Configure the camera
+  //uint8_t rxbyte;
+  //rxbyte = cameraReadCycle( CAM_HREF );
+  //chprintf(IHU_UART, "HREF ADDR: %x ACTUAL: %x\r\n",CAM_HREF,rxbyte);
+  //rxbyte = cameraReadCycle( CAM_HSTART );
+  //chprintf(IHU_UART, "HSTART ADDR: %x ACTUAL: %x\r\n",CAM_HSTART,rxbyte);
+  //rxbyte = cameraReadCycle( CAM_HSTOP );
+  //chprintf(IHU_UART, "HSTOP ADDR: %x ACTUAL: %x\r\n",CAM_HSTOP,rxbyte);
   for( tmp = 0; tmp < CONFIG_PAIRS; tmp++ )
     cameraWriteCycle( cam_config[tmp][0], cam_config[tmp][1] );
   tmp = checkCameraSanity();
-  //powerdownCam();
+  powerdownCam();
   return (msg_t)tmp;
 }
 
@@ -398,19 +407,22 @@ void wakeupCam(){
 void powerdownCam(){
   palSetPad(CAM_PORT, CAM_PWDN);
 }
-
+#define SEG0_VSTART 10
+#define SEG0_VSTOP 250
+#define SEG1_VSTART 250
+#define SEG1_VSTOP 490
 msg_t setupSegment( uint8_t segment )
 { 
- 
+  
   uint8_t vstrt, vstop, vref;
   if( segment == 0 ){ //"Upper" Half of image
-    vstrt = 0x02;  //Row 10 to 250
-    vstop = 0x3E;
-    vref = 0x00 | 0x03 | 0x03<<2;
+    vstrt = SEG0_VSTART >> 2;  
+    vstop = SEG0_VSTOP >> 2;
+    vref = 0x00 | (SEG0_VSTART & 0x3) | ((SEG0_VSTOP & 0x3) <<2);
   }else{ //"Lower" Half of image
-    vstrt = 0x3F;  //Row 252 to 490
-    vstop = 0x7A;
-    vref = 0x00 | 0x00 | 0x03<<2;
+    vstrt = SEG1_VSTART >> 2;  
+    vstop = SEG1_VSTOP >> 2;
+    vref = 0x00 | (SEG1_VSTART & 0x3) | ((SEG1_VSTOP & 0x3) <<2);
   }
 
   //Write our window configuration to the control registers
@@ -437,8 +449,14 @@ msg_t setupSegment( uint8_t segment )
 }
  
 
-void fifoGrabBytes( uint8_t *buf, uint32_t n ){
+void fifoGrabBytes( uint8_t *buf, uint32_t n, uint8_t ignore ){
   uint32_t i = 0;
+  for( i=0; i<ignore; i++ ){
+    palClearPad( FIFO_CTL_PORT, FIFO_RCLK );
+    gptPolledDelay( &GPTD3, FIFO_DELAY );
+    palSetPad( FIFO_CTL_PORT, FIFO_RCLK );
+    gptPolledDelay( &GPTD3, FIFO_DELAY );
+  }
   for( i=0; i<n; i++ ){
     palClearPad( FIFO_CTL_PORT, FIFO_RCLK );
     gptPolledDelay( &GPTD3, FIFO_DELAY );
@@ -483,7 +501,7 @@ msg_t cameraControlThread(void* arg){
   //chprintf(IHU_UART,"Configure Camera\r\n");
   msg_t success = configureCam();
   uint8_t segment;
-  jpeg_init();
+  //jpeg_init();
   for( segment = 0; segment < 2; segment++ )
   {
     //Wakeup Camera
@@ -515,15 +533,17 @@ msg_t cameraControlThread(void* arg){
         palClearPad( FIFO_CTL_PORT, FIFO_WEN );
         //Poweroff cam
         //powerdownCam();
-        uint16_t bulk_reads;
+        uint8_t bulk_reads;
+        if( segment == 0 )
+	  fifoGrabBytes( pixelData, 0, 1 );
         for( bulk_reads=0; bulk_reads < NUM_READS; bulk_reads++ ){
-          fifoGrabBytes( pixelData, READ_SIZE );
-          encode_line_yuv( pixelData, bulk_reads + NUM_READS*segment );
-          //sdWrite( IHU_UART_DEV, &pixelData[0], READ_SIZE );
+          fifoGrabBytes( pixelData, READ_SIZE, 0 );
+          //encode_line_yuv( pixelData, bulk_reads + NUM_READS*segment );
+          sdWrite( IHU_UART_DEV, &pixelData[0], READ_SIZE );
         }
       }
     }
   }
-  jpeg_close();
+  //jpeg_close();
   while(TRUE); 
 }

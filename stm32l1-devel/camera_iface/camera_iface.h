@@ -285,13 +285,14 @@ void	powerdownCam(void);
 
 //Put n bytes from the FIFO into buf
 /*
- * This manipulates the appropriate pads to grab n bytes from the FIFO.  It is
- * assumed that the FIFO already contains valid information, and all we have to
- * do is enable OE, and toggle the FIFO read clock n times.
+ * This manipulates the appropriate pads to grab n bytes from the FIFO after
+ * ignoring the first 'ignore' bytes.  It is assumed that the FIFO already 
+ * contains valid information, and all we have to do is enable OE, and toggle 
+ * the FIFO read clock n times.
  *
  * buf must be >= n bytes long
  */
-void	fifoGrabBytes( uint8_t *buf, uint32_t n );
+void	fifoGrabBytes( uint8_t *buf, uint32_t n, uint8_t ignore );
 
 //Set Camera Rows.
 /*
@@ -306,7 +307,7 @@ void	fifoGrabBytes( uint8_t *buf, uint32_t n );
 msg_t	setupSegment( uint8_t segment );
 
 //Camera control thread -- Needs just a little bit of memory
-extern  WORKING_AREA(waCamera_Thread, 10240+3*1024);
+extern  WORKING_AREA(waCamera_Thread, 10240+5*1024);
 /*
  * This is where the magic happens.  There are two phases of operation for this
  * thread:
