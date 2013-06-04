@@ -671,9 +671,10 @@ void write_RSI(unsigned int _rsi)
 
     // flush buffer
     flushbits(&bitbuf);
-
+    
     // write marker with 3-bit restart interval counter
     writeword(0xFFD0 | _rsi);
+
     write_jpeg(jpgbuff, jpgn);
     jpgn = 0; 
     // reset block-to-block predictors (DC values, etc.)

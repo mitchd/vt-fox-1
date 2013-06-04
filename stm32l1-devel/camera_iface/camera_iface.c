@@ -46,12 +46,12 @@ static const GPTConfig gpt3cfg = {
 
 //Configuration addresses and bytes ensure CONFIG_PAIRS reflects the number
 //of configuration pairs needed!
-#define CONFIG_PAIRS 16
+#define CONFIG_PAIRS 50
 //
 //30 FPS VGA YUV Mode
 //
-#define HSTART (158+10) //Stole these magic numbers from the kernel driver
-#define HSTOP (14+10)
+#define HSTART (158) //Stole these magic numbers from the kernel driver
+#define HSTOP (14)
 static const uint8_t cam_config[CONFIG_PAIRS][2] = {
   {CAM_CLKRC, 0x01},
   {CAM_COM3, 0x00}, //enable scaling
@@ -69,7 +69,28 @@ static const uint8_t cam_config[CONFIG_PAIRS][2] = {
   //Stole some magic from the linux driver
   {CAM_HREF, (HSTART & 0x7) | ((HSTOP & 0x7)<<3) | 0xC0},
   {CAM_HSTART, HSTART>>3 & 0xFF}, 
-  {CAM_HSTOP, HSTOP>>3 & 0xFF}
+  {CAM_HSTOP, HSTOP>>3 & 0xFF},
+  //Gamma Curve
+  { 0x7a, 0x20 },         { 0x7b, 0x10 },
+  { 0x7c, 0x1e },         { 0x7d, 0x35 },
+  { 0x7e, 0x5a },         { 0x7f, 0x69 },
+  { 0x80, 0x76 },         { 0x81, 0x80 },
+  { 0x82, 0x88 },         { 0x83, 0x8f },
+  { 0x84, 0x96 },         { 0x85, 0xa3 },
+  { 0x86, 0xaf },         { 0x87, 0xc4 },
+  { 0x88, 0xd7 },         { 0x89, 0xe8 },
+  //AGC and AEC
+  { CAM_GAIN, 0 },        { CAM_AECH, 0 },
+  { CAM_COM4, 0x40 }, /* magic reserved bit */
+  { CAM_COM9, 0x18 }, /* 4x gain + magic rsvd bit */
+  { CAM_BD50MAX, 0x05 },  { CAM_BD60MAX, 0x07 },
+  { CAM_AEW, 0x95 },      { CAM_AEB, 0x33 },
+  { CAM_VPT, 0xe3 },      { CAM_HAECC1, 0x78 },
+  { CAM_HAECC2, 0x68 },   { 0xa1, 0x03 }, /* magic */
+  { CAM_HAECC3, 0xd8 },   { CAM_HAECC4, 0xd8 },
+  { CAM_HAECC5, 0xf0 },   { CAM_HAECC6, 0x90 },
+  { CAM_HAECC7, 0x94 },
+  { CAM_COM8, 0x8F } //Turn on AGC, AWB, AEC
 };
 
 
@@ -385,14 +406,8 @@ msg_t configureCam(void){
   //Set Default Values
   cameraWriteCycle( CAM_COM7, 0x80 );
   cameraWriteCycle( CAM_CLKRC, 0x80 );
+  cameraWriteCycle( CAM_COM8, 0x00 ); //Turn off AGC, AWB, AEC for config
   //Configure the camera
-  //uint8_t rxbyte;
-  //rxbyte = cameraReadCycle( CAM_HREF );
-  //chprintf(IHU_UART, "HREF ADDR: %x ACTUAL: %x\r\n",CAM_HREF,rxbyte);
-  //rxbyte = cameraReadCycle( CAM_HSTART );
-  //chprintf(IHU_UART, "HSTART ADDR: %x ACTUAL: %x\r\n",CAM_HSTART,rxbyte);
-  //rxbyte = cameraReadCycle( CAM_HSTOP );
-  //chprintf(IHU_UART, "HSTOP ADDR: %x ACTUAL: %x\r\n",CAM_HSTOP,rxbyte);
   for( tmp = 0; tmp < CONFIG_PAIRS; tmp++ )
     cameraWriteCycle( cam_config[tmp][0], cam_config[tmp][1] );
   tmp = checkCameraSanity();
