@@ -3,13 +3,21 @@
 
 #include "stdint.h"
 
+#ifdef RELEASE
+  #include "halconf.h"
+#endif //RELEASE
+
 // enable VT watermark
 #define ENABLE_WATERMARK (1)
 
 //---------------- J P E G ---------------
 
 // Application should provide this function for JPEG stream flushing
+#ifdef RELEASE
+extern void write_jpeg(uint8_t* buff, unsigned size);
+#else
 extern void write_jpeg(const unsigned char buff[], const unsigned size);
+#endif //RELEASE
 
 typedef struct huffman_s
 {

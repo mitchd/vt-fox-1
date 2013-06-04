@@ -32,7 +32,7 @@ int main (int argc, char *argv[])
 
     // write .jpeg header
     huffman_start(IMG_HEIGHT & -8, IMG_WIDTH & -8);
-
+    
     // close output file and exit
     fclose(fid);
     printf(".jpeg header written to '%s'\n", OUTPUT_FILENAME);

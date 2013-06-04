@@ -45,6 +45,7 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #include "chprintf.h"
 #include "jpegenc.h"
 #include "stdint.h"
+
 #define _CAMERA_IFACE_
 
 #define CAM_ADDR_W	0x42
@@ -305,7 +306,7 @@ void	fifoGrabBytes( uint8_t *buf, uint32_t n );
 msg_t	setupSegment( uint8_t segment );
 
 //Camera control thread -- Needs just a little bit of memory
-extern  WORKING_AREA(waCamera_Thread, 10240+1024);
+extern  WORKING_AREA(waCamera_Thread, 10240+3*1024);
 /*
  * This is where the magic happens.  There are two phases of operation for this
  * thread:
@@ -324,4 +325,7 @@ extern  WORKING_AREA(waCamera_Thread, 10240+1024);
  */
 msg_t	cameraControlThread(void* arg);
 
+
+extern void jpeg_init(void);
+extern void jpeg_close(void);
 #endif

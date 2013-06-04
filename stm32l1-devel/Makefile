@@ -201,7 +201,7 @@ DLIBS =
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS =
+UDEFS = -DRELEASE
 
 # Define ASM defines here
 UADEFS =

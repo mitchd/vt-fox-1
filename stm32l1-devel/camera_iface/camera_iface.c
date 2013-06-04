@@ -48,25 +48,25 @@ static const GPTConfig gpt3cfg = {
 //of configuration pairs needed!
 #define CONFIG_PAIRS 13
 //
-//30 FPS VGA RGB565 Mode
+//30 FPS VGA YUV Mode
 //
 static const uint8_t cam_config[CONFIG_PAIRS][2] = {
   {CAM_CLKRC, 0x01},
   {CAM_COM3, 0x00}, //enable scaling
-  {CAM_COM7, 0x04}, //RGB enabled
+  {CAM_COM7, 0x00}, //YUV
   {CAM_COM14, 0x00},
   {CAM_COM10, 0x02},  //VERY IMPORTANT VSYNC INVERT
   {CAM_RGB444, 0x00}, //Disable RGB444
-  {CAM_COM15, 0xD0}, //RGB565 output
+  {CAM_COM15, 0xC0}, //YUV full range
   {CAM_SCALING_DCWCTR, 0x11},
   {CAM_SCALING_PCK_DIV, 0xF0},
   {CAM_SCALING_PCK_DELAY, 0x00 },
   {CAM_SCALING_XSC, 0x3A },
   {CAM_SCALING_YSC, 0x4A },
   {CAM_MVFP, 0x31}, //Flip horizontally and vertically
-  {CAM_HREF, 0x04 | 0x04<<3 | 0x80}, //Setup the Horizontal window
-  {CAM_HSTART, 0x0E},  //Columns 116 through 756
-  {CAM_HSTOP, 0x3E}
+//  {CAM_HREF, 0x04 | 0x04<<3 | 0x80}, //Setup the Horizontal window
+//  {CAM_HSTART, 0x0E},  //Columns 116 through 756
+//  {CAM_HSTOP, 0x3E}
 };
 
 
@@ -83,12 +83,6 @@ void setupSCCB(void){
 //Use this to turn on the timer
 static void prepareTimer(void){
   gptStart(&GPTD3, &gpt3cfg);
-  return;
-}
-
-//Don't forget to turn it off when we're done transferring data
-static void deactivateTimer(void){
-  gptStop(&GPTD3);
   return;
 }
 
@@ -444,7 +438,6 @@ msg_t setupSegment( uint8_t segment )
  
 
 void fifoGrabBytes( uint8_t *buf, uint32_t n ){
-  uint8_t dataByte = 0;
   uint32_t i = 0;
   for( i=0; i<n; i++ ){
     palClearPad( FIFO_CTL_PORT, FIFO_RCLK );
@@ -475,8 +468,9 @@ static void resetReadPointer(void){
 
 msg_t cameraControlThread(void* arg){
   const uint16_t IMG_WIDTH = 640;
-  const uint16_t IMG_HEIGHT = 480;
+  const uint16_t READ_SIZE = IMG_WIDTH*2*8;
   const uint16_t NUM_READS = 30;
+  chThdSetPriority( HIGHPRIO );
   //chprintf(IHU_UART,"Setup Timer\r\n");
   prepareTimer();
   //chprintf(IHU_UART,"Setup Cam Port\r\n");
@@ -489,6 +483,7 @@ msg_t cameraControlThread(void* arg){
   //chprintf(IHU_UART,"Configure Camera\r\n");
   msg_t success = configureCam();
   uint8_t segment;
+  jpeg_init();
   for( segment = 0; segment < 2; segment++ )
   {
     //Wakeup Camera
@@ -498,7 +493,6 @@ msg_t cameraControlThread(void* arg){
     if( success == RDY_OK ){  
       //Ensure WEN is disabled
       palClearPad( FIFO_CTL_PORT, FIFO_WEN );
-      //jpeg_init();
       if( setupSegment( segment ) != RDY_OK ){
         //segmentNumber--;
         chprintf(IHU_UART,"SETUP FAILED\r\n");
@@ -523,12 +517,13 @@ msg_t cameraControlThread(void* arg){
         //powerdownCam();
         uint16_t bulk_reads;
         for( bulk_reads=0; bulk_reads < NUM_READS; bulk_reads++ ){
-          fifoGrabBytes( pixelData, IMG_WIDTH*2*8 );
-          //convert_rows( pixelData );
-          sdWrite( IHU_UART_DEV, &pixelData[0], IMG_WIDTH*2*8 );
+          fifoGrabBytes( pixelData, READ_SIZE );
+          encode_line_yuv( pixelData, bulk_reads + NUM_READS*segment );
+          //sdWrite( IHU_UART_DEV, &pixelData[0], READ_SIZE );
         }
       }
     }
   }
+  jpeg_close();
   while(TRUE); 
 }
