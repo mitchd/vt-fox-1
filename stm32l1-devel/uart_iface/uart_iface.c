@@ -128,9 +128,9 @@ msg_t UART_Thread(void* arg){
   //Register this as an event listener for events from SD3
   EventListener serial_events;
   //Events received from the serial device
-  const eventmask_t myUART_events = IO_INPUT_AVAILABLE | 
+  const eventmask_t myUART_events = CHN_INPUT_AVAILABLE | 
                                     SD_OVERRUN_ERROR | 
-                                    IO_OUTPUT_EMPTY;
+                                    CHN_OUTPUT_EMPTY;
   chEvtRegisterMask( &(SD3.event), &serial_events, myUART_events );
 
   //Make our read buffer the same size as the buffer used with the serial device 
@@ -153,11 +153,11 @@ msg_t UART_Thread(void* arg){
     myUART_state = UART_COMM_IDLE;
     events = chEvtWaitOne( myUART_events );
     //Now we have an event
-    if( events & IO_INPUT_AVAILABLE ){
+    if( events & CHN_INPUT_AVAILABLE ){
       //We have data available on the input
       myUART_state = UART_COMM_READ_COMMAND;
       sdRead( &SD3, read_buffer, COMMAND_SIZE );
-      chEvtClearFlags( IO_INPUT_AVAILABLE );
+      chEvtClearFlags( CHN_INPUT_AVAILABLE );
       //Check for RX errors
       if( events & SD_OVERRUN_ERROR ){
         //We had a buffer overrun in grabbing this data
@@ -188,8 +188,8 @@ msg_t UART_Thread(void* arg){
         }
       }
     }
-    if( events & IO_OUTPUT_EMPTY )
-      chEvtClearFlags( IO_OUTPUT_EMPTY );
+    if( events & CHN_OUTPUT_EMPTY )
+      chEvtClearFlags( CHN_OUTPUT_EMPTY );
   }
 #else
 /*
@@ -204,10 +204,10 @@ msg_t UART_Thread(void* arg){
     //Wait for a serial event:
     events = chEvtWaitOne( myUART_events );
     //Now we have an event
-    if( events & IO_INPUT_AVAILABLE ){
+    if( events & CHN_INPUT_AVAILABLE ){
       //We have data available on the input
       sdRead( &SD3, read_buffer, COMMAND_SIZE );
-      chEvtClearFlags( IO_INPUT_AVAILABLE );
+      chEvtClearFlags( CHN_INPUT_AVAILABLE );
       if( read_buffer[0] == 0x8 ){ //Handle some backspaceage
         input_pos--;
         if( input_pos == (uint8_t)(-1) )
@@ -387,8 +387,8 @@ msg_t UART_Thread(void* arg){
          }
        }
     }
-    if( events & IO_OUTPUT_EMPTY )
-      chEvtClearFlags( IO_OUTPUT_EMPTY );
+    if( events & CHN_OUTPUT_EMPTY )
+      chEvtClearFlags( CHN_OUTPUT_EMPTY );
   }
 #endif
   return 0;

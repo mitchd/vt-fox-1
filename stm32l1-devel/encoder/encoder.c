@@ -2,6 +2,7 @@
 #include "dct.h"
 #include "jpegenc.h"
 #include "spi_flash.h"
+#include "uart_iface.h"
 
 // constants specific to 640 x 480 image
 #define IMG_WIDTH   (640)   // image width [pixels]
@@ -10,12 +11,19 @@
 
 uint32_t file_addr_ptr = 0;
 
-//void write_jpeg(uint8_t* buff, unsigned size){
+#ifdef RELEASE
+void write_jpeg(uint8_t* buff, unsigned size)
+{
+    sdWrite( IHU_UART_DEV, buff, size );
+}
+#else
 void write_jpeg(const unsigned char buff[], const unsigned size)
 {
-    flashWriteBytes( file_addr_ptr, buff, size );
-    file_addr_ptr += size;
+    //flashWriteBytes( file_addr_ptr, buff, size );
+    //file_addr_ptr += size;
+    sdWrite( IHU_UART_DEV, (uint8_t*)&buff, size );
 }
+#endif //RELEASE
 
 // initialize jpeg encoder
 void jpeg_init(void)

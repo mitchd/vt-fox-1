@@ -1,6 +1,6 @@
 /*
     ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+                 2011,2012,2013 Giovanni Di Sirio.
 
     This file is part of ChibiOS/RT.
 
@@ -16,13 +16,6 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-                                      ---
-
-    A special exception to the GPL can be applied should you wish to distribute
-    a combined work that includes ChibiOS/RT, without being obliged to provide
-    the source code for any proprietary components. See the file exception.txt
-    for full details of how and when the exception can be applied.
 */
 
 /**
@@ -119,7 +112,7 @@ void _port_init(void) {
 
   /* Initialization of the vector table and priority related settings.*/
   SCB_VTOR = CORTEX_VTOR_INIT;
-  SCB_AIRCR = AIRCR_VECTKEY | AIRCR_PRIGROUP(0);
+  SCB_AIRCR = AIRCR_VECTKEY | AIRCR_PRIGROUP(CORTEX_PRIGROUP_INIT);
 
   /* Initialization of the system vectors used by the port.*/
   nvicSetSystemHandlerPriority(HANDLER_SVCALL,
@@ -164,7 +157,7 @@ void _port_irq_epilogue(void) {
        required or not.*/
     if (chSchIsPreemptionRequired()) {
       /* Preemption is required we need to enforce a context switch.*/
-      ctxp->pc = _port_switch_from_isr;
+      ctxp->pc = (void *)_port_switch_from_isr;
 #if CORTEX_USE_FPU
       /* Triggering a lazy FPU state save.*/
       asm volatile ("vmrs    APSR_nzcv, FPSCR" : : : "memory");
@@ -173,7 +166,7 @@ void _port_irq_epilogue(void) {
     else {
       /* Preemption not required, we just need to exit the exception
          atomically.*/
-      ctxp->pc = _port_exit_from_isr;
+      ctxp->pc = (void *)_port_exit_from_isr;
     }
 
 #if CORTEX_USE_FPU
@@ -191,7 +184,7 @@ void _port_irq_epilogue(void) {
 #endif
 
     /* Note, returning without unlocking is intentional, this is done in
-       order to keep the rest of the context switching atomic.*/
+       order to keep the rest of the context switch atomic.*/
     return;
   }
   port_unlock_from_isr();

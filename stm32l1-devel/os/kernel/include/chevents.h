@@ -1,6 +1,6 @@
 /*
     ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+                 2011,2012,2013 Giovanni Di Sirio.
 
     This file is part of ChibiOS/RT.
 
@@ -16,14 +16,10 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-                                      ---
-
-    A special exception to the GPL can be applied should you wish to distribute
-    a combined work that includes ChibiOS/RT, without being obliged to provide
-    the source code for any proprietary components. See the file exception.txt
-    for full details of how and when the exception can be applied.
 */
+/*
+   Concepts and parts of this file have been contributed by Scott (skute).
+ */
 
 /**
  * @file    chevents.h
@@ -52,6 +48,8 @@ struct EventListener {
   eventmask_t           el_mask;        /**< @brief Event flags mask associated
                                                     by the thread to the Event
                                                     Source.                 */
+  flagsmask_t           el_flags;       /**< @brief Flags added to the listener
+                                                    by the event source.*/
 };
 
 /**
@@ -171,12 +169,14 @@ extern "C" {
                          EventListener *elp,
                          eventmask_t mask);
   void chEvtUnregister(EventSource *esp, EventListener *elp);
-  eventmask_t chEvtClearFlags(eventmask_t mask);
-  eventmask_t chEvtAddFlags(eventmask_t mask);
-  void chEvtSignalFlags(Thread *tp, eventmask_t mask);
-  void chEvtSignalFlagsI(Thread *tp, eventmask_t mask);
-  void chEvtBroadcastFlags(EventSource *esp, eventmask_t mask);
-  void chEvtBroadcastFlagsI(EventSource *esp, eventmask_t mask);
+  eventmask_t chEvtGetAndClearEvents(eventmask_t mask);
+  eventmask_t chEvtAddEvents(eventmask_t mask);
+  flagsmask_t chEvtGetAndClearFlags(EventListener *elp);
+  flagsmask_t chEvtGetAndClearFlagsI(EventListener *elp);
+  void chEvtSignal(Thread *tp, eventmask_t mask);
+  void chEvtSignalI(Thread *tp, eventmask_t mask);
+  void chEvtBroadcastFlags(EventSource *esp, flagsmask_t flags);
+  void chEvtBroadcastFlagsI(EventSource *esp, flagsmask_t flags);
   void chEvtDispatch(const evhandler_t *handlers, eventmask_t mask);
 #if CH_OPTIMIZE_SPEED || !CH_USE_EVENTS_TIMEOUT
   eventmask_t chEvtWaitOne(eventmask_t mask);

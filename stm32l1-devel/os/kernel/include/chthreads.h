@@ -1,6 +1,6 @@
 /*
     ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+                 2011,2012,2013 Giovanni Di Sirio.
 
     This file is part of ChibiOS/RT.
 
@@ -16,13 +16,6 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-                                      ---
-
-    A special exception to the GPL can be applied should you wish to distribute
-    a combined work that includes ChibiOS/RT, without being obliged to provide
-    the source code for any proprietary components. See the file exception.txt
-    for full details of how and when the exception can be applied.
 */
 
 /**
@@ -129,6 +122,12 @@ struct Thread {
    */
   trefs_t               p_refs;
 #endif
+  /**
+   * @brief Number of ticks remaining to this thread.
+   */
+#if (CH_TIME_QUANTUM > 0) || defined(__DOXYGEN__)
+  tslices_t             p_preempt;
+#endif
 #if CH_DBG_THREADS_PROFILING || defined(__DOXYGEN__)
   /**
    * @brief Thread consumed time in ticks.
@@ -228,15 +227,17 @@ typedef msg_t (*tfunc_t)(void *);
  */
 /**
  * @brief   Returns a pointer to the current @p Thread.
+ * @note    Can be invoked in any context.
  *
- * @api
+ * @special
  */
 #define chThdSelf() currp
 
 /**
  * @brief   Returns the current thread priority.
+ * @note    Can be invoked in any context.
  *
- * @api
+ * @special
  */
 #define chThdGetPriority() (currp->p_prio)
 
@@ -244,38 +245,42 @@ typedef msg_t (*tfunc_t)(void *);
  * @brief   Returns the number of ticks consumed by the specified thread.
  * @note    This function is only available when the
  *          @p CH_DBG_THREADS_PROFILING configuration option is enabled.
+ * @note    Can be invoked in any context.
  *
  * @param[in] tp        pointer to the thread
  *
- * @api
+ * @special
  */
 #define chThdGetTicks(tp) ((tp)->p_time)
 
 /**
  * @brief   Returns the pointer to the @p Thread local storage area, if any.
+ * @note    Can be invoked in any context.
  *
- * @api
+ * @special
  */
 #define chThdLS() (void *)(currp + 1)
 
 /**
  * @brief   Verifies if the specified thread is in the @p THD_STATE_FINAL state.
+ * @note    Can be invoked in any context.
  *
  * @param[in] tp        pointer to the thread
  * @retval TRUE         thread terminated.
  * @retval FALSE        thread not terminated.
  *
- * @api
+ * @special
  */
 #define chThdTerminated(tp) ((tp)->p_state == THD_STATE_FINAL)
 
 /**
  * @brief   Verifies if the current thread has a termination request pending.
+ * @note    Can be invoked in any context.
  *
- * @retval TRUE         termination request pended.
- * @retval FALSE        termination request not pended.
+ * @retval TRUE         termination request pending.
+ * @retval FALSE        termination request not pending.
  *
- * @api
+ * @special
  */
 #define chThdShouldTerminate() (currp->p_flags & THD_TERMINATE)
 
@@ -305,8 +310,8 @@ typedef msg_t (*tfunc_t)(void *);
 /**
  * @brief   Delays the invoking thread for the specified number of seconds.
  * @note    The specified time is rounded up to a value allowed by the real
- *          system clock.
- * @note    The maximum specified value is implementation dependent.
+ *          system tick clock.
+ * @note    The maximum specifiable value is implementation dependent.
  *
  * @param[in] sec       time in seconds, must be different from zero
  *
@@ -318,8 +323,8 @@ typedef msg_t (*tfunc_t)(void *);
  * @brief   Delays the invoking thread for the specified number of
  *          milliseconds.
  * @note    The specified time is rounded up to a value allowed by the real
- *          system clock.
- * @note    The maximum specified value is implementation dependent.
+ *          system tick clock.
+ * @note    The maximum specifiable value is implementation dependent.
  *
  * @param[in] msec      time in milliseconds, must be different from zero
  *
@@ -331,8 +336,8 @@ typedef msg_t (*tfunc_t)(void *);
  * @brief   Delays the invoking thread for the specified number of
  *          microseconds.
  * @note    The specified time is rounded up to a value allowed by the real
- *          system clock.
- * @note    The maximum specified value is implementation dependent.
+ *          system tick clock.
+ * @note    The maximum specifiable value is implementation dependent.
  *
  * @param[in] usec      time in microseconds, must be different from zero
  *

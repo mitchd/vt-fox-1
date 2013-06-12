@@ -44,7 +44,7 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #include "chprintf.h"
 
 //WORKING_AREA(waUART_Thread, 512);
-WORKING_AREA(waCamera_Thread, 10240+1024);
+WORKING_AREA(waCamera_Thread, 10240+5*1024);
 
 /*
  * Application entry point.
@@ -65,15 +65,14 @@ int main(void) {
    * Activates the serial driver 3.
    * PB10(TX) and PB11(RX) are routed to USART3.
    */
-  sdStart(&SD3, NULL);
+  sdStart(IHU_UART_DEV, NULL);
   palSetPadMode(GPIOB, 10, PAL_MODE_ALTERNATE(7));
   palSetPadMode(GPIOB, 11, PAL_MODE_ALTERNATE(7));
 
   /* Activate serial driver 4 for debug
    *  PA9 (TX) and PA10(RX)
-   *
    */
-  sdStart(&SD1,NULL);
+  sdStart(DBG_UART_DEV, NULL);
   palSetPadMode(GPIOA, 9 , PAL_MODE_ALTERNATE(7));
   palSetPadMode(GPIOA, 10, PAL_MODE_ALTERNATE(7));
   /*
@@ -89,5 +88,20 @@ int main(void) {
 
   //Make this thread low priority
   chThdSetPriority( IDLEPRIO );
-  while (TRUE); 
+  //
+
+  //#define CLK_DELAY 640
+  //#define FIFO_DELAY 5
+  //#define PWR_DELAY 32000
+  //static const GPTConfig gpt3cfg = {
+  //  32000000,    /* 32MHz timer clock.*/
+  //  NULL         /* Timer callback.*/
+  //};
+  //gptStart(&GPTD3, &gpt3cfg);
+  //const uint32_t delay = 32000000/4; 
+  while (TRUE){
+     //chThdSleepMilliseconds(500);
+     //gptPolledDelay(&GPTD3,delay);
+     //chprintf(IHU_UART,"MAIN\r\n");
+  }
 }

@@ -310,15 +310,20 @@ static short quantize(const short data, const unsigned short qt)
 // code-stream output counter
 static unsigned jpgn = 0;
 // code-stream output buffer, adjust its size if you need
-static unsigned char jpgbuff[256];
+#ifdef RELEASE
+  #define BUFFSIZE SERIAL_BUFFERS_SIZE
+#else
+  #define BUFFSIZE (128)
+#endif //RELEASE
+static unsigned char jpgbuff[BUFFSIZE];
 
 static void writebyte(const unsigned char b)
 {
 	jpgbuff[jpgn++] = b;
 
-	if (jpgn == sizeof(jpgbuff)) {
+	if (jpgn == BUFFSIZE) {
 		jpgn = 0;
-		write_jpeg(jpgbuff, sizeof(jpgbuff));
+		write_jpeg(jpgbuff, BUFFSIZE);
 	}
 }
 
@@ -560,7 +565,10 @@ void huffman_start(short height, short width)
 	write_DHTinfo();
 	write_DRIinfo();    // set restart interval length
 	write_SOSinfo();
-
+#ifndef RELEASE
+        write_jpeg(jpgbuff, jpgn);
+        jpgn = 0;
+#endif //~RELEASE
 	huffman_ctx[2].dc = 
 	huffman_ctx[1].dc = 
 	huffman_ctx[0].dc = 0;
@@ -663,10 +671,12 @@ void write_RSI(unsigned int _rsi)
 
     // flush buffer
     flushbits(&bitbuf);
-
+    
     // write marker with 3-bit restart interval counter
     writeword(0xFFD0 | _rsi);
-    
+
+    write_jpeg(jpgbuff, jpgn);
+    jpgn = 0; 
     // reset block-to-block predictors (DC values, etc.)
     huffman_resetdc();
 }

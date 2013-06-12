@@ -1,29 +1,22 @@
 /*
-    ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+    ChibiOS/RT - Copyright (C) 2006-2013 Giovanni Di Sirio
 
-    This file is part of ChibiOS/RT.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS/RT is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS/RT is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-                                      ---
-
-    A special exception to the GPL can be applied should you wish to distribute
-    a combined work that includes ChibiOS/RT, without being obliged to provide
-    the source code for any proprietary components. See the file exception.txt
-    for full details of how and when the exception can be applied.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
+/*
+   Concepts and parts of this file have been contributed by Fabio Utzig and
+   Xo Wang.
+ */
 
 /**
  * @file    STM32/icu_lld.c
@@ -37,6 +30,10 @@
 #include "hal.h"
 
 #if HAL_USE_ICU || defined(__DOXYGEN__)
+
+/*===========================================================================*/
+/* Driver local definitions.                                                 */
+/*===========================================================================*/
 
 /*===========================================================================*/
 /* Driver exported variables.                                                */
@@ -90,8 +87,16 @@ ICUDriver ICUD5;
 ICUDriver ICUD8;
 #endif
 
+/**
+ * @brief   ICUD9 driver identifier.
+ * @note    The driver ICUD9 allocates the timer TIM9 when enabled.
+ */
+#if STM32_ICU_USE_TIM9 || defined(__DOXYGEN__)
+ICUDriver ICUD9;
+#endif
+
 /*===========================================================================*/
-/* Driver local variables.                                                   */
+/* Driver local variables and types.                                         */
 /*===========================================================================*/
 
 /*===========================================================================*/
@@ -109,10 +114,19 @@ static void icu_lld_serve_interrupt(ICUDriver *icup) {
   sr  = icup->tim->SR;
   sr &= icup->tim->DIER;
   icup->tim->SR = ~sr;
-  if ((sr & TIM_SR_CC1IF) != 0)
-    _icu_isr_invoke_period_cb(icup);
-  if ((sr & TIM_SR_CC2IF) != 0)
-    _icu_isr_invoke_width_cb(icup);
+  if (icup->config->channel == ICU_CHANNEL_1) {
+    if ((sr & TIM_SR_CC1IF) != 0)
+      _icu_isr_invoke_period_cb(icup);
+    if ((sr & TIM_SR_CC2IF) != 0)
+      _icu_isr_invoke_width_cb(icup);
+  } else {
+    if ((sr & TIM_SR_CC1IF) != 0)
+      _icu_isr_invoke_width_cb(icup);
+    if ((sr & TIM_SR_CC2IF) != 0)
+      _icu_isr_invoke_period_cb(icup);
+  }
+  if ((sr & TIM_SR_UIF) != 0)
+    _icu_isr_invoke_overflow_cb(icup);
 }
 
 /*===========================================================================*/
@@ -120,6 +134,9 @@ static void icu_lld_serve_interrupt(ICUDriver *icup) {
 /*===========================================================================*/
 
 #if STM32_ICU_USE_TIM1
+#if !defined(STM32_TIM1_UP_HANDLER)
+#error "STM32_TIM1_UP_HANDLER not defined"
+#endif
 /**
  * @brief   TIM1 compare interrupt handler.
  * @note    It is assumed that the various sources are only activated if the
@@ -128,7 +145,7 @@ static void icu_lld_serve_interrupt(ICUDriver *icup) {
  *
  * @isr
  */
-CH_IRQ_HANDLER(TIM1_CC_IRQHandler) {
+CH_IRQ_HANDLER(STM32_TIM1_UP_HANDLER) {
 
   CH_IRQ_PROLOGUE();
 
@@ -137,6 +154,9 @@ CH_IRQ_HANDLER(TIM1_CC_IRQHandler) {
   CH_IRQ_EPILOGUE();
 }
 
+#if !defined(STM32_TIM1_CC_HANDLER)
+#error "STM32_TIM1_CC_HANDLER not defined"
+#endif
 /**
  * @brief   TIM1 compare interrupt handler.
  * @note    It is assumed that the various sources are only activated if the
@@ -145,7 +165,7 @@ CH_IRQ_HANDLER(TIM1_CC_IRQHandler) {
  *
  * @isr
  */
-CH_IRQ_HANDLER(TIM1_UP_IRQHandler) {
+CH_IRQ_HANDLER(STM32_TIM1_CC_HANDLER) {
 
   CH_IRQ_PROLOGUE();
 
@@ -156,6 +176,9 @@ CH_IRQ_HANDLER(TIM1_UP_IRQHandler) {
 #endif /* STM32_ICU_USE_TIM1 */
 
 #if STM32_ICU_USE_TIM2
+#if !defined(STM32_TIM2_HANDLER)
+#error "STM32_TIM2_HANDLER not defined"
+#endif
 /**
  * @brief   TIM2 interrupt handler.
  * @note    It is assumed that the various sources are only activated if the
@@ -164,7 +187,7 @@ CH_IRQ_HANDLER(TIM1_UP_IRQHandler) {
  *
  * @isr
  */
-CH_IRQ_HANDLER(TIM2_IRQHandler) {
+CH_IRQ_HANDLER(STM32_TIM2_HANDLER) {
 
   CH_IRQ_PROLOGUE();
 
@@ -175,6 +198,9 @@ CH_IRQ_HANDLER(TIM2_IRQHandler) {
 #endif /* STM32_ICU_USE_TIM2 */
 
 #if STM32_ICU_USE_TIM3
+#if !defined(STM32_TIM3_HANDLER)
+#error "STM32_TIM3_HANDLER not defined"
+#endif
 /**
  * @brief   TIM3 interrupt handler.
  * @note    It is assumed that the various sources are only activated if the
@@ -183,7 +209,7 @@ CH_IRQ_HANDLER(TIM2_IRQHandler) {
  *
  * @isr
  */
-CH_IRQ_HANDLER(TIM3_IRQHandler) {
+CH_IRQ_HANDLER(STM32_TIM3_HANDLER) {
 
   CH_IRQ_PROLOGUE();
 
@@ -194,6 +220,9 @@ CH_IRQ_HANDLER(TIM3_IRQHandler) {
 #endif /* STM32_ICU_USE_TIM3 */
 
 #if STM32_ICU_USE_TIM4
+#if !defined(STM32_TIM4_HANDLER)
+#error "STM32_TIM4_HANDLER not defined"
+#endif
 /**
  * @brief   TIM4 interrupt handler.
  * @note    It is assumed that the various sources are only activated if the
@@ -202,7 +231,7 @@ CH_IRQ_HANDLER(TIM3_IRQHandler) {
  *
  * @isr
  */
-CH_IRQ_HANDLER(TIM4_IRQHandler) {
+CH_IRQ_HANDLER(STM32_TIM4_HANDLER) {
 
   CH_IRQ_PROLOGUE();
 
@@ -213,6 +242,9 @@ CH_IRQ_HANDLER(TIM4_IRQHandler) {
 #endif /* STM32_ICU_USE_TIM4 */
 
 #if STM32_ICU_USE_TIM5
+#if !defined(STM32_TIM5_HANDLER)
+#error "STM32_TIM5_HANDLER not defined"
+#endif
 /**
  * @brief   TIM5 interrupt handler.
  * @note    It is assumed that the various sources are only activated if the
@@ -221,7 +253,7 @@ CH_IRQ_HANDLER(TIM4_IRQHandler) {
  *
  * @isr
  */
-CH_IRQ_HANDLER(TIM5_IRQHandler) {
+CH_IRQ_HANDLER(STM32_TIM5_HANDLER) {
 
   CH_IRQ_PROLOGUE();
 
@@ -232,6 +264,9 @@ CH_IRQ_HANDLER(TIM5_IRQHandler) {
 #endif /* STM32_ICU_USE_TIM5 */
 
 #if STM32_ICU_USE_TIM8
+#if !defined(STM32_TIM8_UP_HANDLER)
+#error "STM32_TIM8_UP_HANDLER not defined"
+#endif
 /**
  * @brief   TIM8 compare interrupt handler.
  * @note    It is assumed that the various sources are only activated if the
@@ -240,7 +275,7 @@ CH_IRQ_HANDLER(TIM5_IRQHandler) {
  *
  * @isr
  */
-CH_IRQ_HANDLER(TIM8_CC_IRQHandler) {
+CH_IRQ_HANDLER(STM32_TIM8_UP_HANDLER) {
 
   CH_IRQ_PROLOGUE();
 
@@ -249,6 +284,9 @@ CH_IRQ_HANDLER(TIM8_CC_IRQHandler) {
   CH_IRQ_EPILOGUE();
 }
 
+#if !defined(STM32_TIM8_CC_HANDLER)
+#error "STM32_TIM8_CC_HANDLER not defined"
+#endif
 /**
  * @brief   TIM8 compare interrupt handler.
  * @note    It is assumed that the various sources are only activated if the
@@ -257,7 +295,7 @@ CH_IRQ_HANDLER(TIM8_CC_IRQHandler) {
  *
  * @isr
  */
-CH_IRQ_HANDLER(TIM8_UP_IRQHandler) {
+CH_IRQ_HANDLER(STM32_TIM8_CC_HANDLER) {
 
   CH_IRQ_PROLOGUE();
 
@@ -266,6 +304,28 @@ CH_IRQ_HANDLER(TIM8_UP_IRQHandler) {
   CH_IRQ_EPILOGUE();
 }
 #endif /* STM32_ICU_USE_TIM8 */
+
+#if STM32_ICU_USE_TIM9
+#if !defined(STM32_TIM9_HANDLER)
+#error "STM32_TIM9_HANDLER not defined"
+#endif
+/**
+ * @brief   TIM9 interrupt handler.
+ * @note    It is assumed that the various sources are only activated if the
+ *          associated callback pointer is not equal to @p NULL in order to not
+ *          perform an extra check in a potentially critical interrupt handler.
+ *
+ * @isr
+ */
+CH_IRQ_HANDLER(STM32_TIM9_HANDLER) {
+
+  CH_IRQ_PROLOGUE();
+
+  icu_lld_serve_interrupt(&ICUD9);
+
+  CH_IRQ_EPILOGUE();
+}
+#endif /* STM32_ICU_USE_TIM9 */
 
 /*===========================================================================*/
 /* Driver exported functions.                                                */
@@ -313,6 +373,12 @@ void icu_lld_init(void) {
   icuObjectInit(&ICUD8);
   ICUD8.tim = STM32_TIM8;
 #endif
+
+#if STM32_ICU_USE_TIM9
+  /* Driver initialization.*/
+  icuObjectInit(&ICUD9);
+  ICUD9.tim = STM32_TIM9;
+#endif
 }
 
 /**
@@ -325,15 +391,19 @@ void icu_lld_init(void) {
 void icu_lld_start(ICUDriver *icup) {
   uint32_t psc;
 
+  chDbgAssert((icup->config->channel == ICU_CHANNEL_1) ||
+              (icup->config->channel == ICU_CHANNEL_2),
+              "icu_lld_start(), #1", "invalid input");
+
   if (icup->state == ICU_STOP) {
     /* Clock activation and timer reset.*/
 #if STM32_ICU_USE_TIM1
     if (&ICUD1 == icup) {
       rccEnableTIM1(FALSE);
       rccResetTIM1();
-      nvicEnableVector(TIM1_CC_IRQn,
+      nvicEnableVector(STM32_TIM1_UP_NUMBER,
                        CORTEX_PRIORITY_MASK(STM32_ICU_TIM1_IRQ_PRIORITY));
-      nvicEnableVector(TIM1_UP_IRQn,
+      nvicEnableVector(STM32_TIM1_CC_NUMBER,
                        CORTEX_PRIORITY_MASK(STM32_ICU_TIM1_IRQ_PRIORITY));
       icup->clock = STM32_TIMCLK2;
     }
@@ -342,7 +412,7 @@ void icu_lld_start(ICUDriver *icup) {
     if (&ICUD2 == icup) {
       rccEnableTIM2(FALSE);
       rccResetTIM2();
-      nvicEnableVector(TIM2_IRQn,
+      nvicEnableVector(STM32_TIM2_NUMBER,
                        CORTEX_PRIORITY_MASK(STM32_ICU_TIM2_IRQ_PRIORITY));
       icup->clock = STM32_TIMCLK1;
     }
@@ -351,7 +421,7 @@ void icu_lld_start(ICUDriver *icup) {
     if (&ICUD3 == icup) {
       rccEnableTIM3(FALSE);
       rccResetTIM3();
-      nvicEnableVector(TIM3_IRQn,
+      nvicEnableVector(STM32_TIM3_NUMBER,
                        CORTEX_PRIORITY_MASK(STM32_ICU_TIM3_IRQ_PRIORITY));
       icup->clock = STM32_TIMCLK1;
     }
@@ -360,17 +430,16 @@ void icu_lld_start(ICUDriver *icup) {
     if (&ICUD4 == icup) {
       rccEnableTIM4(FALSE);
       rccResetTIM4();
-      nvicEnableVector(TIM4_IRQn,
+      nvicEnableVector(STM32_TIM4_NUMBER,
                        CORTEX_PRIORITY_MASK(STM32_ICU_TIM4_IRQ_PRIORITY));
       icup->clock = STM32_TIMCLK1;
     }
 #endif
-
 #if STM32_ICU_USE_TIM5
     if (&ICUD5 == icup) {
       rccEnableTIM5(FALSE);
       rccResetTIM5();
-      nvicEnableVector(TIM5_IRQn,
+      nvicEnableVector(STM32_TIM5_NUMBER,
                        CORTEX_PRIORITY_MASK(STM32_ICU_TIM5_IRQ_PRIORITY));
       icup->clock = STM32_TIMCLK1;
     }
@@ -379,11 +448,20 @@ void icu_lld_start(ICUDriver *icup) {
     if (&ICUD8 == icup) {
       rccEnableTIM8(FALSE);
       rccResetTIM8();
-      nvicEnableVector(TIM8_CC_IRQn,
+      nvicEnableVector(STM32_TIM8_UP_NUMBER,
                        CORTEX_PRIORITY_MASK(STM32_ICU_TIM8_IRQ_PRIORITY));
-      nvicEnableVector(TIM8_UP_IRQn,
+      nvicEnableVector(STM32_TIM8_CC_NUMBER,
                        CORTEX_PRIORITY_MASK(STM32_ICU_TIM8_IRQ_PRIORITY));
       icup->clock = STM32_TIMCLK2;
+    }
+#endif
+#if STM32_ICU_USE_TIM9
+    if (&ICUD9 == icup) {
+      rccEnableTIM9(FALSE);
+      rccResetTIM9();
+      nvicEnableVector(STM32_TIM9_NUMBER,
+                       CORTEX_PRIORITY_MASK(STM32_ICU_TIM9_IRQ_PRIORITY));
+      icup->clock = STM32_TIMCLK1;
     }
 #endif
   }
@@ -405,23 +483,53 @@ void icu_lld_start(ICUDriver *icup) {
   icup->tim->PSC  = (uint16_t)psc;
   icup->tim->ARR   = 0xFFFF;
 
-  /* CCMR1_CC1S = 01 = CH1 Input on TI1.
-     CCMR1_CC2S = 10 = CH2 Input on TI1.*/
-  icup->tim->CCMR1 = TIM_CCMR1_CC1S_0 |
-                     TIM_CCMR1_CC2S_1;
-  /* SMCR_TS  = 101, input is TI1FP1.
-     SMCR_SMS = 100, reset on rising edge.*/
-  icup->tim->SMCR  = TIM_SMCR_TS_2 | TIM_SMCR_TS_0 |
-                     TIM_SMCR_SMS_2;
-  /* The CCER settings depend on the selected trigger mode.
-     ICU_INPUT_ACTIVE_HIGH: Active on rising edge, idle on falling edge.
-     ICU_INPUT_ACTIVE_LOW:  Active on falling edge, idle on rising edge.*/
-  if (icup->config->mode == ICU_INPUT_ACTIVE_HIGH)
-    icup->tim->CCER = TIM_CCER_CC1E |
-                      TIM_CCER_CC2E | TIM_CCER_CC2P;
-  else
-    icup->tim->CCER = TIM_CCER_CC1E | TIM_CCER_CC1P |
-                      TIM_CCER_CC2E;
+  if (icup->config->channel == ICU_CHANNEL_1) {
+    /* Selected input 1.
+       CCMR1_CC1S = 01 = CH1 Input on TI1.
+       CCMR1_CC2S = 10 = CH2 Input on TI1.*/
+    icup->tim->CCMR1 = TIM_CCMR1_CC1S_0 |
+                       TIM_CCMR1_CC2S_1;
+    /* SMCR_TS  = 101, input is TI1FP1.
+       SMCR_SMS = 100, reset on rising edge.*/
+    icup->tim->SMCR  = TIM_SMCR_TS_2 | TIM_SMCR_TS_0 |
+                       TIM_SMCR_SMS_2;
+    /* The CCER settings depend on the selected trigger mode.
+       ICU_INPUT_ACTIVE_HIGH: Active on rising edge, idle on falling edge.
+       ICU_INPUT_ACTIVE_LOW:  Active on falling edge, idle on rising edge.*/
+    if (icup->config->mode == ICU_INPUT_ACTIVE_HIGH)
+      icup->tim->CCER = TIM_CCER_CC1E |
+                        TIM_CCER_CC2E | TIM_CCER_CC2P;
+    else
+      icup->tim->CCER = TIM_CCER_CC1E | TIM_CCER_CC1P |
+                        TIM_CCER_CC2E;
+    /* Direct pointers to the capture registers in order to make reading
+       data faster from within callbacks.*/
+    icup->wccrp = &icup->tim->CCR[1];
+    icup->pccrp = &icup->tim->CCR[0];
+  } else {
+    /* Selected input 2.
+       CCMR1_CC1S = 10 = CH1 Input on TI2.
+       CCMR1_CC2S = 01 = CH2 Input on TI2.*/
+    icup->tim->CCMR1 = TIM_CCMR1_CC1S_1 |
+                       TIM_CCMR1_CC2S_0;
+    /* SMCR_TS  = 110, input is TI2FP2.
+       SMCR_SMS = 100, reset on rising edge.*/
+    icup->tim->SMCR  = TIM_SMCR_TS_2 | TIM_SMCR_TS_1 |
+                       TIM_SMCR_SMS_2;
+    /* The CCER settings depend on the selected trigger mode.
+       ICU_INPUT_ACTIVE_HIGH: Active on rising edge, idle on falling edge.
+       ICU_INPUT_ACTIVE_LOW:  Active on falling edge, idle on rising edge.*/
+    if (icup->config->mode == ICU_INPUT_ACTIVE_HIGH)
+      icup->tim->CCER = TIM_CCER_CC1E | TIM_CCER_CC1P |
+                        TIM_CCER_CC2E;
+    else
+      icup->tim->CCER = TIM_CCER_CC1E |
+                        TIM_CCER_CC2E | TIM_CCER_CC2P;
+    /* Direct pointers to the capture registers in order to make reading
+       data faster from within callbacks.*/
+    icup->wccrp = &icup->tim->CCR[0];
+    icup->pccrp = &icup->tim->CCR[1];
+  }
 }
 
 /**
@@ -441,43 +549,49 @@ void icu_lld_stop(ICUDriver *icup) {
 
 #if STM32_ICU_USE_TIM1
     if (&ICUD1 == icup) {
-      nvicDisableVector(TIM1_CC_IRQn);
-      nvicDisableVector(TIM1_UP_IRQn);
+      nvicDisableVector(STM32_TIM1_UP_NUMBER);
+      nvicDisableVector(STM32_TIM1_CC_NUMBER);
       rccDisableTIM1(FALSE);
     }
 #endif
 #if STM32_ICU_USE_TIM2
     if (&ICUD2 == icup) {
-      nvicDisableVector(TIM2_IRQn);
+      nvicDisableVector(STM32_TIM2_NUMBER);
       rccDisableTIM2(FALSE);
     }
 #endif
 #if STM32_ICU_USE_TIM3
     if (&ICUD3 == icup) {
-      nvicDisableVector(TIM3_IRQn);
+      nvicDisableVector(STM32_TIM3_NUMBER);
       rccDisableTIM3(FALSE);
     }
 #endif
 #if STM32_ICU_USE_TIM4
     if (&ICUD4 == icup) {
-      nvicDisableVector(TIM4_IRQn);
+      nvicDisableVector(STM32_TIM4_NUMBER);
       rccDisableTIM4(FALSE);
     }
 #endif
 #if STM32_ICU_USE_TIM5
     if (&ICUD5 == icup) {
-      nvicDisableVector(TIM5_IRQn);
+      nvicDisableVector(STM32_TIM5_NUMBER);
       rccDisableTIM5(FALSE);
     }
 #endif
-  }
 #if STM32_ICU_USE_TIM8
     if (&ICUD8 == icup) {
-      nvicDisableVector(TIM8_CC_IRQn);
-      nvicDisableVector(TIM8_UP_IRQn);
+      nvicDisableVector(STM32_TIM8_UP_NUMBER);
+      nvicDisableVector(STM32_TIM8_CC_NUMBER);
       rccDisableTIM8(FALSE);
     }
 #endif
+#if STM32_ICU_USE_TIM9
+    if (&ICUD9 == icup) {
+      nvicDisableVector(STM32_TIM9_NUMBER);
+      rccDisableTIM9(FALSE);
+    }
+#endif
+  }
 }
 
 /**
@@ -489,11 +603,20 @@ void icu_lld_stop(ICUDriver *icup) {
  */
 void icu_lld_enable(ICUDriver *icup) {
 
-  icup->tim->SR   = 0;                      /* Clear pending IRQs (if any). */
-  if (icup->config->period_cb != NULL)
-    icup->tim->DIER |= TIM_DIER_CC1IE;
-  if (icup->config->width_cb != NULL)
-    icup->tim->DIER |= TIM_DIER_CC2IE;
+  icup->tim->SR = 0;                        /* Clear pending IRQs (if any). */
+  if (icup->config->channel == ICU_CHANNEL_1) {
+    if (icup->config->period_cb != NULL)
+      icup->tim->DIER |= TIM_DIER_CC1IE;
+    if (icup->config->width_cb != NULL)
+      icup->tim->DIER |= TIM_DIER_CC2IE;
+  } else {
+    if (icup->config->width_cb != NULL)
+      icup->tim->DIER |= TIM_DIER_CC1IE;
+    if (icup->config->period_cb != NULL)
+      icup->tim->DIER |= TIM_DIER_CC2IE;
+  }
+  if (icup->config->overflow_cb != NULL)
+    icup->tim->DIER |= TIM_DIER_UIE;
   icup->tim->CR1  = TIM_CR1_URS | TIM_CR1_CEN;
 }
 

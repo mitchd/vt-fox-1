@@ -1,28 +1,17 @@
 /*
-    ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+    ChibiOS/RT - Copyright (C) 2006-2013 Giovanni Di Sirio
 
-    This file is part of ChibiOS/RT.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    ChibiOS/RT is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+        http://www.apache.org/licenses/LICENSE-2.0
 
-    ChibiOS/RT is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-                                      ---
-
-    A special exception to the GPL can be applied should you wish to distribute
-    a combined work that includes ChibiOS/RT, without being obliged to provide
-    the source code for any proprietary components. See the file exception.txt
-    for full details of how and when the exception can be applied.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 */
 
 /**
@@ -126,6 +115,15 @@
 #endif
 
 /**
+ * @brief   SPI2 driver enable switch.
+ * @details If set to @p TRUE the support for device SSP1 is included.
+ * @note    The default is @p TRUE.
+ */
+#if !defined(LPC13xx_SPI_USE_SSP1) || defined(__DOXYGEN__)
+#define LPC13xx_SPI_USE_SSP1                FALSE
+#endif
+
+/**
  * @brief   SSP0 PCLK divider.
  */
 #if !defined(LPC13xx_SPI_SSP0CLKDIV) || defined(__DOXYGEN__)
@@ -133,10 +131,24 @@
 #endif
 
 /**
+ * @brief   SSP1 PCLK divider.
+ */
+#if !defined(LPC13xx_SPI_SSP1CLKDIV) || defined(__DOXYGEN__)
+#define LPC13xx_SPI_SSP1CLKDIV              1
+#endif
+
+/**
  * @brief   SPI0 interrupt priority level setting.
  */
 #if !defined(LPC13xx_SPI_SSP0_IRQ_PRIORITY) || defined(__DOXYGEN__)
 #define LPC13xx_SPI_SSP0_IRQ_PRIORITY       5
+#endif
+
+/**
+ * @brief   SPI1 interrupt priority level setting.
+ */
+#if !defined(LPC13xx_SPI_SSP1_IRQ_PRIORITY) || defined(__DOXYGEN__)
+#define LPC13xx_SPI_SSP1_IRQ_PRIORITY       5
 #endif
 
 /**
@@ -162,7 +174,11 @@
 #error "invalid LPC13xx_SPI_SSP0CLKDIV setting"
 #endif
 
-#if !LPC13xx_SPI_USE_SSP0
+#if (LPC13xx_SPI_SSP1CLKDIV < 1) || (LPC13xx_SPI_SSP1CLKDIV > 255)
+#error "invalid LPC13xx_SPI_SSP1CLKDIV setting"
+#endif
+
+#if !LPC13xx_SPI_USE_SSP0 && !LPC13xx_SPI_USE_SSP1
 #error "SPI driver activated but no SPI peripheral assigned"
 #endif
 
@@ -175,8 +191,14 @@
 /**
  * @brief   SSP0 clock.
  */
-#define LPC13xx_SERIAL_SSP0_PCLK                                            \
-  (LPC13xx_MAINCLK / LPC13xx_SERIAL_SSP0CLKDIV)
+#define LPC13xx_SPI_SSP0_PCLK                                               \
+  (LPC13xx_MAINCLK / LPC13xx_SPI_SSP0CLKDIV)
+
+/**
+ * @brief   SSP1 clock.
+ */
+#define LPC13xx_SPI_SSP1_PCLK                                               \
+  (LPC13xx_MAINCLK / LPC13xx_SPI_SSP1CLKDIV)
 
 /*===========================================================================*/
 /* Driver data structures and types.                                         */
@@ -286,6 +308,10 @@ struct SPIDriver {
 
 #if LPC13xx_SPI_USE_SSP0 && !defined(__DOXYGEN__)
 extern SPIDriver SPID1;
+#endif
+
+#if LPC13xx_SPI_USE_SSP1 && !defined(__DOXYGEN__)
+extern SPIDriver SPID2;
 #endif
 
 #ifdef __cplusplus

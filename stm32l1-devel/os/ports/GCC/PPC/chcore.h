@@ -1,6 +1,6 @@
 /*
     ChibiOS/RT - Copyright (C) 2006,2007,2008,2009,2010,
-                 2011,2012 Giovanni Di Sirio.
+                 2011,2012,2013 Giovanni Di Sirio.
 
     This file is part of ChibiOS/RT.
 
@@ -16,13 +16,6 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-                                      ---
-
-    A special exception to the GPL can be applied should you wish to distribute
-    a combined work that includes ChibiOS/RT, without being obliged to provide
-    the source code for any proprietary components. See the file exception.txt
-    for full details of how and when the exception can be applied.
 */
 
 /**
@@ -40,29 +33,68 @@
 #error "option CH_DBG_ENABLE_STACK_CHECK not supported by this port"
 #endif
 
-/*
- * Port-related configuration parameters.
+/*===========================================================================*/
+/* Port constants (common).                                                  */
+/*===========================================================================*/
+
+/* Added to make the header stand-alone when included from asm.*/
+#ifndef FALSE
+#define FALSE       0
+#endif
+#ifndef TRUE
+#define TRUE        (!FALSE)
+#endif
+
+/**
+ * @name    Supported core variants
+ * @{
  */
+#define PPC_VARIANT_e200z0              200
+#define PPC_VARIANT_e200z3              203
+#define PPC_VARIANT_e200z4              204
+/** @} */
+
+#include "vectors.h"
+#include "ppcparams.h"
+
+/*===========================================================================*/
+/* Port macros (common).                                                     */
+/*===========================================================================*/
+
+/*===========================================================================*/
+/* Port configurable parameters (common).                                    */
+/*===========================================================================*/
+
+/**
+ * @brief   Use VLE instruction set.
+ * @note    This parameter is usually set in the Makefile.
+ */
+#if !defined(PPC_USE_VLE)
+#define PPC_USE_VLE                     TRUE
+#endif
 
 /**
  * @brief   Enables the use of the @p WFI instruction.
  */
-#ifndef ENABLE_WFI_IDLE
-#define ENABLE_WFI_IDLE                 0
+#if !defined(PPC_ENABLE_WFI_IDLE)
+#define PPC_ENABLE_WFI_IDLE             FALSE
 #endif
 
-/* Core variants identifiers.*/
-#define PPC_VARIANT_e200z3              3   /**< e200z3 core identifier.    */
-#define PPC_VARIANT_e200z4              4   /**< e200z4 core identifier.    */
+/*===========================================================================*/
+/* Port derived parameters (common).                                         */
+/*===========================================================================*/
 
-/**
- * @brief   Core variant selector.
- * @details This setting affects the predefined architecture strings and
- *          possibly code paths and structures into the port layer.
- */
-#if !defined(PPC_VARIANT) || defined(__DOXYGEN__)
-#define PPC_VARIANT                     PPC_VARIANT_e200z3
+#if PPC_USE_VLE && !PPC_SUPPORTS_VLE
+#error "the selected MCU does not support VLE instructions set"
 #endif
+
+#if !PPC_USE_VLE && !PPC_SUPPORTS_BOOKE
+#error "the selected MCU does not support BookE instructions set"
+#endif
+
+/*===========================================================================*/
+/* Port exported info (common).                                              */
+/*===========================================================================*/
 
 /**
  * @brief   Unique macro for the implemented architecture.
@@ -77,7 +109,9 @@
 /**
  * @brief   Name of the architecture variant.
  */
-#if (PPC_VARIANT == PPC_VARIANT_e200z3) || defined(__DOXYGEN__)
+#if (PPC_VARIANT == PPC_VARIANT_e200z0) || defined(__DOXYGEN__)
+#define CH_CORE_VARIANT_NAME            "e200z0"
+#elif PPC_VARIANT == PPC_VARIANT_e200z3
 #define CH_CORE_VARIANT_NAME            "e200z3"
 #elif PPC_VARIANT == PPC_VARIANT_e200z4
 #define CH_CORE_VARIANT_NAME            "e200z4"
@@ -93,7 +127,17 @@
 /**
  * @brief   Port-specific information string.
  */
-#define CH_PORT_INFO                    "None"
+#if PPC_USE_VLE
+#define CH_PORT_INFO                    "VLE mode"
+#else
+#define CH_PORT_INFO                    "Book-E mode"
+#endif
+
+/*===========================================================================*/
+/* Port implementation part (common).                                        */
+/*===========================================================================*/
+
+#if !defined(_FROM_ASM_)
 
 /**
  * @brief   Base type for stack and memory alignment.
@@ -209,19 +253,16 @@ struct context {
  *          by @p PORT_INT_REQUIRED_STACK.
  */
 #ifndef PORT_IDLE_THREAD_STACK_SIZE
-#define PORT_IDLE_THREAD_STACK_SIZE     0
+#define PORT_IDLE_THREAD_STACK_SIZE     32
 #endif
 
 /**
  * @brief   Per-thread stack overhead for interrupts servicing.
  * @details This constant is used in the calculation of the correct working
  *          area size.
- *          This value can be zero on those architecture where there is a
- *          separate interrupt stack and the stack space between @p intctx and
- *          @p extctx is known to be zero.
  */
 #ifndef PORT_INT_REQUIRED_STACK
-#define PORT_INT_REQUIRED_STACK         128
+#define PORT_INT_REQUIRED_STACK         256
 #endif
 
 /**
@@ -266,17 +307,6 @@ struct context {
 #define PORT_IRQ_HANDLER(id) void id(void)
 
 /**
- * @brief   Kernel port layer initialization.
- * @details IVPR4 and IVPR10 initialization, INTC_IACKR_PRC0 initialization.
- */
-#define port_init() {                                                       \
-	asm volatile ("li          %r3, IVOR4@l         \t\n"                   \
-  	              "mtIVOR4     %r3                  \t\n"                   \
-                  "li          %r3, IVOR10@l        \t\n"                   \
-  	              "mtIVOR10    %r3");                                       \
-}
-
-/**
  * @details Implemented as global interrupt disable.
  */
 #define port_lock() asm volatile ("wrteei  0" : : : "memory")
@@ -313,11 +343,41 @@ struct context {
 #define port_enable() asm volatile ("wrteei  1" : : : "memory")
 
 /**
+ * @brief   Performs a context switch between two threads.
+ * @details This is the most critical code in any port, this function
+ *          is responsible for the context switch between 2 threads.
+ * @note    The implementation of this code affects <b>directly</b> the context
+ *          switch performance so optimize here as much as you can.
+ *
+ * @param[in] ntp       the thread to be switched in
+ * @param[in] otp       the thread to be switched out
+ */
+#if !CH_DBG_ENABLE_STACK_CHECK || defined(__DOXYGEN__)
+#define port_switch(ntp, otp) _port_switch(ntp, otp)
+#else
+#define port_switch(ntp, otp) {                                             \
+  register struct intctx *sp asm ("%r1");                                   \
+  if ((stkalign_t *)(sp - 1) < otp->p_stklimit)                             \
+    chDbgPanic("stack overflow");                                           \
+  _port_switch(ntp, otp);                                                   \
+}
+#endif
+
+/**
+ * @brief   Writes to a special register.
+ *
+ * @param[in] spr       special register number
+ * @param[in] val       value to be written
+ */
+#define port_mtspr(spr, val)                                                \
+  asm volatile ("mtspr %0,%1" : : "n" (spr), "r" (val))
+
+/**
  * @details This port function is implemented as inlined code for performance
  *          reasons.
  */
-#if ENABLE_WFI_IDLE != 0
-#ifndef port_wait_for_interrupt
+#if PPC_ENABLE_WFI_IDLE
+#if !defined(port_wait_for_interrupt)
 #define port_wait_for_interrupt() {                                         \
   asm volatile ("wait" : : : "memory");                                     \
 }
@@ -329,12 +389,15 @@ struct context {
 #ifdef __cplusplus
 extern "C" {
 #endif
+  void port_init(void);
   void port_halt(void);
-  void port_switch(Thread *ntp, Thread *otp);
+  void _port_switch(Thread *ntp, Thread *otp);
   void _port_thread_start(void);
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* _FROM_ASM_ */
 
 #endif /* _CHCORE_H_ */
 
