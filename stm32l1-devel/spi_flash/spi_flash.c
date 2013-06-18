@@ -109,7 +109,6 @@ void configureSPIFlash(void){
   spiSend( &SPID1, 1, &spi_cmd );
   spiUnselect( &SPID1 );
   //Wait until the device is ready before releasing to the program
-  //checkBusy();
   flashSleep();
   spiReleaseBus( &SPID1 );
 }
@@ -127,7 +126,6 @@ void flashWriteByte( uint32_t addr, uint8_t data ){
   flashWake();
   chThdSleepMicroseconds(400);
   //Wait until there is no write in progress
-  //checkBusy();
   //Set the command
   flash_cmd = FLASH_WRITE_ENABLE;
   //NSS Low
