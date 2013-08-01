@@ -222,7 +222,6 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #define FIFO_RCLK	3    //Read clock
 
 
-
 //Setup the Camera SCCB
 /*
  * This configures a software device for communicating with the camera:

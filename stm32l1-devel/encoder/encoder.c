@@ -9,27 +9,18 @@
 #define IMG_HEIGHT  (480)   // image height [pixels]
 #define NUM_LINES   (60)    // number of 8-pixel lines in image
 
-#ifdef RELEASE
-static uint32_t file_addr_ptr = IMAGE_DATA_START;
+uint32_t file_addr_ptr = IMAGE_DATA_START;
 void write_jpeg(uint8_t* buff, unsigned size)
 {
     //sdWrite( IHU_UART_DEV, buff, size );
     flashWriteBytes( file_addr_ptr, buff, size );
     file_addr_ptr += (uint32_t)size;
 }
-uint32_t jpeg_addr_ptr()
+
+uint32_t jpeg_addr_ptr(void)
 {
     return file_addr_ptr;
 }
-#else
-uint32_t file_addr_ptr = 0;
-void write_jpeg(const unsigned char buff[], const unsigned size)
-{
-    //flashWriteBytes( file_addr_ptr, buff, size );
-    //file_addr_ptr += size;
-    sdWrite( IHU_UART_DEV, (uint8_t*)&buff, size );
-}
-#endif //RELEASE
 
 // initialize jpeg encoder
 void jpeg_init(void)
@@ -39,8 +30,9 @@ void jpeg_init(void)
     //       changes size and the Huffman tables are fixed so there
     //       is no need to actually send this information with each
     //       image.
+#ifndef RELEASE
     huffman_start(IMG_HEIGHT & -8, IMG_WIDTH & -8);
-
+#endif
     // reset the DC values
     huffman_resetdc();
 }
@@ -54,6 +46,7 @@ void jpeg_close(void)
     //       not called, it is still important to call huffman_stop()
     huffman_stop();
 }
+
 
 // TODO:
 // write yuv_get_line() method and use the following

@@ -553,6 +553,7 @@ msg_t cameraControlThread(void* arg){
 	  fifoGrabBytes( pixelData, 0, 1 );
         for( bulk_reads=0; bulk_reads < NUM_READS; bulk_reads++ ){
           fifoGrabBytes( pixelData, READ_SIZE, 0 );
+          //Process the line
           encode_line_yuv( pixelData, bulk_reads + NUM_READS*segment );
           //sdWrite( IHU_UART_DEV, &pixelData[0], READ_SIZE );
         }
@@ -560,6 +561,7 @@ msg_t cameraControlThread(void* arg){
     }
   }
   jpeg_close();
+#ifndef RELEASE
   uint32_t image_end = jpeg_addr_ptr();
   uint32_t image_start = IMAGE_DATA_START;
   uint32_t num_steps = (image_end-image_start)/SERIAL_BUFFERS_SIZE;
@@ -568,11 +570,12 @@ msg_t cameraControlThread(void* arg){
   for(; step < num_steps; step++)
   {
     flashReadBytes( image_ptr, pixelData, SERIAL_BUFFERS_SIZE );
-    sdWrite( IHU_UART_DEV, &pixelData[0], SERIAL_BUFFERS_SIZE );
+    sdWrite( IHU_UART_DEV, pixelData, SERIAL_BUFFERS_SIZE );
     image_ptr += SERIAL_BUFFERS_SIZE;
   }
   uint32_t remainder = image_end - image_ptr;
   flashReadBytes( image_ptr, pixelData, remainder );
-  sdWrite( IHU_UART_DEV, &pixelData[0], remainder );
+  sdWrite( IHU_UART_DEV, pixelData, remainder );
+#endif //~RELEASE
   while(TRUE); 
 }
