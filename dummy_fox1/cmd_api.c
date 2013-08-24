@@ -104,6 +104,7 @@ int get_REPLY(int ser) {
     if ((ret = read(ser,rcvd,sizeof rcvd)) == -1) {
         err = errno;
         printf("ERROR: read failed with %d strerror(%s)\n",err,strerror(err));
+        exit(1);
         return -1;
     }
 
@@ -166,6 +167,7 @@ int get_REPLY(int ser) {
 *******************************************************************************/
 void get_IMG(int ser) {
 
+    char msg[6];
     printf (" --> get_IMG(int) is still unimplemented\n");
     //Add header to message
     msg[1] = MSG_VER>>8;
@@ -263,6 +265,7 @@ void send_IMG(int ser) {
      * I added the structs to simulate the process EXP4 will take. These 
      * structs will be filled straight from the MRAM.
      *************************************************************************/
+    /*
     system_data sd;
     line_data ld;
 
@@ -280,6 +283,7 @@ void send_IMG(int ser) {
         msg[4] = (desc>>8);
         msg[5] = (desc&0xFF); 
     }
+    */
 }
 
 void print_HELP() {
