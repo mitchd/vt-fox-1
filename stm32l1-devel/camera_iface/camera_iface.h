@@ -48,6 +48,8 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 
 #define _CAMERA_IFACE_
 
+extern uint8_t cameraHealth;
+extern uint8_t cameraThreadDone;
 #define CAM_ADDR_W	0x42
 #define CAM_ADDR_R      0x43
 

@@ -85,5 +85,12 @@ msg_t UART_Thread(void* arg);
 #define UART_COMM_ERROR -1
 #define UART_COMM_SEND_DATA 2
 
+//Signalling variables
+extern uint8_t cameraHealth;
+#define CAMERA_HEALTHY 1
+#define CAMERA_FAILED 0
+extern uint8_t cameraThreadDone;
+#define CAMERA_THREAD_BUSY 0
+#define CAMERA_THREAD_DONE 0
 
 #endif

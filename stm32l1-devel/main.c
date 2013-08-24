@@ -45,7 +45,8 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 
 //WORKING_AREA(waUART_Thread, 512);
 WORKING_AREA(waCamera_Thread, 10240+5*1024);
-
+uint8_t cameraHealth;
+uint8_t cameraThreadDone;
 /*
  * Application entry point.
  */
