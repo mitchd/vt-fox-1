@@ -156,38 +156,36 @@ msg_t UART_Thread(void* arg) {
         if (events & CHN_INPUT_AVAILABLE) {
             // Blocks until we have read a set number of bytes
             sdRead(&SD3, read_buffer, MESSAGE_CMD_SIZE);
-            chEvtClearFlags(CHN_INPUT_AVAILABLE);
 
             #ifdef UART_DBG_PRINT
-            chprintf((BaseChannel*)&SD1, "UART data received: \r\n");
+            chprintf(DBG_UART, "UART data received: \r\n");
             for (i = 0; i < MESSAGE_CMD_SIZE; i++) {
-                chprintf((BaseChannel*)&SD1, "%02X ", read_buffer[i]);
+                chprintf(DBG_UART, "%02X ", read_buffer[i]);
             }
-            chprintf((BaseChannel*)&SD1, "\r\n");
+            chprintf(DBG_UART, "\r\n");
             #endif
 
             // First check for transmission errors
             if (events & SD_OVERRUN_ERROR) {
                 #ifdef UART_DBG_PRINT
-                chprintf((BaseChannel*)&SD1, "UART overrun error!\r\n");
+                chprintf(DBG_UART, "UART overrun error!\r\n");
                 #endif
-                chEvtClearFlags(SD_OVERRUN_ERROR);
             } else {
                 // Ensure that the message version is correct and bytes 4 and 5 are identical
                 if (read_buffer[0] != MESSAGE_VERSION || read_buffer[1] != 0x0) {
                     #ifdef UART_DBG_PRINT
-                    chprintf((BaseChannel*)&SD1, "UART message version incorrect!\r\n");
+                    chprintf(DBG_UART, "UART message version incorrect!\r\n");
                     #endif
                 } else if (read_buffer[4] != read_buffer[5]) {
                     #ifdef UART_DBG_PRINT
-                    chprintf((BaseChannel*)&SD1, "UART command block incorrect!\r\n");
+                    chprintf(DBG_UART, "UART command block incorrect!\r\n");
                     #endif
                 } else {
                     // If correct, start parsing the command
                     switch (read_buffer[4]) {
                         case CMD_READY:
                             #ifdef UART_DBG_PRINT
-                            chprintf((BaseChannel*)&SD1, "UART command ready query received\r\n");
+                            chprintf(DBG_UART, "UART command ready query received\r\n");
                             #endif
                             // Check if the camera has failed
                             if (!cameraHealth) {
@@ -203,14 +201,14 @@ msg_t UART_Thread(void* arg) {
                             break;
                         case CMD_TRANS:
                             #ifdef UART_DBG_PRINT
-                            chprintf((BaseChannel*)&SD1, "UART command transmit received\r\n");
+                            chprintf(DBG_UART, "UART command transmit received\r\n");
                             #endif
                             // Check if the camera has failed
                             if (!cameraHealth) {
                                 UART_Reply_Failed(write_cmd_buffer);
                             } else {
                                 // Return the camera data here
-                                
+                                ;
                             }
                             break;
                         default:
@@ -221,8 +219,6 @@ msg_t UART_Thread(void* arg) {
             }
         }
         // No idea what this event is for, but we clear it anyways
-        if (events & CHN_OUTPUT_EMPTY)
-            chEvtClearFlags(CHN_OUTPUT_EMPTY);
-    }
     return 0;
 }
+
