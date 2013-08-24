@@ -10,6 +10,7 @@
 #define NUM_LINES   (60)    // number of 8-pixel lines in image
 
 uint32_t file_addr_ptr = IMAGE_DATA_START;
+
 void write_jpeg(uint8_t* buff, unsigned size)
 {
     //sdWrite( IHU_UART_DEV, buff, size );
