@@ -268,7 +268,7 @@ void flashReadBytes( uint32_t addr, uint8_t* data, uint32_t n ){
  */
 
 uint16_t readLineFromSPI(int line, uint8_t *data) {
-  line_data *ld_spi = &((line_data*)SYSTEM_DATA_START)[line];
+  line_data *ld_spi = &((line_data*)SYSTEM_DATA_ADDR)[line];
   line_data ld;
   uint32_t len;
   uint8_t acc;
