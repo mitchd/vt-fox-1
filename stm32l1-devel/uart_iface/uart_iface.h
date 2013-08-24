@@ -91,6 +91,6 @@ extern uint8_t cameraHealth;
 #define CAMERA_FAILED 0
 extern uint8_t cameraThreadDone;
 #define CAMERA_THREAD_BUSY 0
-#define CAMERA_THREAD_DONE 0
+#define CAMERA_THREAD_DONE 1
 
 #endif
