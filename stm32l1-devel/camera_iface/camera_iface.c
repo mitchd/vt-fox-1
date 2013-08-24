@@ -386,9 +386,8 @@ msg_t checkCameraSanity(void){
   //Verify Programming
   for( tmp = 0; tmp < CONFIG_PAIRS; tmp++ ){
     rxbyte = cameraReadCycle( cam_config[tmp][0] );
-    //chprintf((BaseChannel *)&SD1, "ADDR: %x VAL: %x\r\n", cam_config[tmp][0], rxbyte );
     if( rxbyte != cam_config[tmp][1] ){
-      chprintf(IHU_UART, "ADDR: %x ASSIGNED: %x ACTUAL: %x\r\n",cam_config[tmp][0],cam_config[tmp][1],rxbyte);
+      chprintf(DEBUG_UART, "ADDR: %x ASSIGNED: %x ACTUAL: %x\r\n",cam_config[tmp][0],cam_config[tmp][1],rxbyte);
       return -1;
     }
   }
@@ -530,7 +529,7 @@ msg_t cameraControlThread(void* arg){
       palClearPad( FIFO_CTL_PORT, FIFO_WEN );
       if( setupSegment( segment ) != RDY_OK ){
         //segmentNumber--;
-        chprintf(IHU_UART,"SETUP FAILED\r\n");
+        chprintf(DEBUG_UART,"SETUP FAILED\r\n");
         cameraHealth = CAMERA_FAILED;
         cameraThreadDone = CAMERA_THREAD_DONE;
       }else{
