@@ -45,6 +45,7 @@ static const SPIConfig spi1cfg = {
   4,           //NSS Pad
   0 		//Configuration Register stuff (set bits here to go slow)
 };
+int generateLineIndex(void);
 
 
 static void flashSleep(void){
@@ -292,4 +293,68 @@ uint16_t readLineFromSPI(int line, uint8_t *data) {
   return len;
 
 }
+
+/* Using buffer information passed to it, maintains a circular buffer
+ * which single bytes can be read from 
+ */      
+static uint8_t getNextImageByte(uint8_t *buf, uint32_t *curBufPosition, 
+       uint32_t *curImagePosition) {
+  uint8_t ret = 0;
+  if (*curBufPosition == 0) {
+    flashReadBytes(*curImagePosition, &buf[0], 128);
+    *curImagePosition += 128;
+  }
+  ret = buf[*curBufPosition];
+  (*curBufPosition)++;
+
+  if (*curBufPosition == 128) {
+    *curBufPosition = 0;
+  }
+  return ret;
+}
+
+   
+int generateLineIndex() {
+  uint8_t spibuf[128];
+  line_data ld;
+  uint32_t bufpos = 0, imgpos = IMAGE_DATA_START;
+  uint16_t word;
+  uint8_t one, two;
+  uint32_t linestart, lineend = IMAGE_DATA_START;
+  uint8_t rst, acc = 0;
+  uint32_t line = 0;
+  one = getNextImageByte(spibuf, &bufpos, &imgpos);
+  linestart = 0;
+  while (1) {
+    two = getNextImageByte(spibuf, &bufpos, &imgpos);
+    word = (one << 8) + two;
+    acc += two;
+    if (word == 0xFFD9) {
+      /* End of JPG condition */
+    }
+
+    if ((word & 0xFFD8) == 0xFFD0) {
+      /* end of line condition */
+      rst = word & 0x7;
+      if ( (line & 0x7) != rst) {
+        /* We have missed at least one line */
+        if ( (line & 0x7) < rst) {
+          line = (line & 0xFFFFFFF8) + rst;
+        } else {
+          line = (line & 0xFFFFFFF8) + rst + 8;
+        }
+      }
+      linestart = lineend; 
+      lineend = (imgpos - 128 + bufpos);
+      ld.line_num = line;
+      ld.start_addr = linestart;  
+      ld.end_addr = lineend;  
+      ld.chksum = acc;
+      flashWriteBytes(SYSTEM_DATA_ADDR + sizeof(line_data) * line, (uint8_t*)&ld, sizeof(ld));
+      acc = 0;
+    }
       
+  }
+  return line;
+}
+

@@ -184,4 +184,8 @@ void	flashReadBytes( uint32_t addr, uint8_t* data, uint32_t n );
  */
 uint16_t readLineFromSPI(int line, uint8_t *data);
 
+/* Generates array of line_data structs from image data
+ */
+int generateLineIndex();
+
 #endif
