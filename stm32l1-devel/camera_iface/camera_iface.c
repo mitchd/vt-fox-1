@@ -386,9 +386,8 @@ msg_t checkCameraSanity(void){
   //Verify Programming
   for( tmp = 0; tmp < CONFIG_PAIRS; tmp++ ){
     rxbyte = cameraReadCycle( cam_config[tmp][0] );
-    //chprintf((BaseChannel *)&SD1, "ADDR: %x VAL: %x\r\n", cam_config[tmp][0], rxbyte );
     if( rxbyte != cam_config[tmp][1] ){
-      chprintf(IHU_UART, "ADDR: %x ASSIGNED: %x ACTUAL: %x\r\n",cam_config[tmp][0],cam_config[tmp][1],rxbyte);
+      chprintf(DBG_UART, "ADDR: %x ASSIGNED: %x ACTUAL: %x\r\n",cam_config[tmp][0],cam_config[tmp][1],rxbyte);
       return -1;
     }
   }
@@ -503,6 +502,8 @@ msg_t cameraControlThread(void* arg){
   const uint16_t IMG_WIDTH = 640;
   const uint16_t READ_SIZE = IMG_WIDTH*2*8;
   const uint16_t NUM_READS = 30;
+  cameraThreadDone = CAMERA_THREAD_BUSY;
+  cameraHealth = CAMERA_HEALTHY;
   chThdSetPriority( HIGHPRIO );
   //chprintf(IHU_UART,"Setup Timer\r\n");
   prepareTimer();
@@ -528,7 +529,9 @@ msg_t cameraControlThread(void* arg){
       palClearPad( FIFO_CTL_PORT, FIFO_WEN );
       if( setupSegment( segment ) != RDY_OK ){
         //segmentNumber--;
-        chprintf(IHU_UART,"SETUP FAILED\r\n");
+        chprintf(DBG_UART,"SETUP FAILED\r\n");
+        cameraHealth = CAMERA_FAILED;
+        cameraThreadDone = CAMERA_THREAD_DONE;
       }else{
         //Reset the read pointer
         resetReadPointer();
@@ -577,5 +580,5 @@ msg_t cameraControlThread(void* arg){
   flashReadBytes( image_ptr, pixelData, remainder );
   sdWrite( IHU_UART_DEV, pixelData, remainder );
 #endif //~RELEASE
-  while(TRUE); 
+  cameraThreadDone = CAMERA_THREAD_DONE;
 }

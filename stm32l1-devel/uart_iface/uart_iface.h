@@ -40,20 +40,9 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 
 /*uart_iface.h
  *
- *
  *This is the definition of the uart communication worker thread
  *
  *It will handle all of our interfacing with the IHU at 38.4 kbaud
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
  *
  */
 
@@ -68,10 +57,15 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 
 #define RELEASE_VERSION
 
-#define COMMAND_SIZE 2
+#define MESSAGE_CMD_SIZE 6
+#define MESSAGE_DATA_SIZE 512
+#define MESSAGE_CMD_REPLY_SIZE 6
+#define MESSAGE_DATA_REPLY_SIZE 8
 
-//Define LOCAL_ECHO to echo characters sent through UART (debugging stuffs)
+#define MESSAGE_VERSION 0x6E // 1.10
+#define SOFTWARE_BUILD  0x64 // 1.00
 
+#define UART_DBG_PRINT
 
 extern WORKING_AREA(waUART_Thread, 512);
 msg_t UART_Thread(void* arg);
@@ -80,10 +74,23 @@ msg_t UART_Thread(void* arg);
 #define DBG_UART (BaseSequentialStream*)&SD1
 #define DBG_UART_DEV	&SD1
 
-#define UART_COMM_IDLE 0
+#define UART_COMM_IDLE         0
 #define UART_COMM_READ_COMMAND 1
-#define UART_COMM_ERROR -1
-#define UART_COMM_SEND_DATA 2
+#define UART_COMM_ERROR        -1
+#define UART_COMM_SEND_DATA    2
 
+#define CMD_READY   (uint8_t)'R'
+#define CMD_TRANS   (uint8_t)'T'
+#define RESP_NREADY (uint8_t)'N'
+#define RESP_READY  (uint8_t)'Y'
+#define RESP_FAILED (uint8_t)'F'
+
+//Signalling variables
+extern uint8_t cameraHealth;
+#define CAMERA_HEALTHY 1
+#define CAMERA_FAILED 0
+extern uint8_t cameraThreadDone;
+#define CAMERA_THREAD_BUSY 0
+#define CAMERA_THREAD_DONE 1
 
 #endif

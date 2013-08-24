@@ -43,9 +43,10 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #include "camera_iface.h"
 #include "chprintf.h"
 
-//WORKING_AREA(waUART_Thread, 512);
+WORKING_AREA(waUART_Thread, 512);
 WORKING_AREA(waCamera_Thread, 10240+5*1024);
-
+uint8_t cameraHealth;
+uint8_t cameraThreadDone;
 /*
  * Application entry point.
  */
@@ -78,18 +79,19 @@ int main(void) {
   /*
    * Create our UART thread
    */
-  //chThdCreateStatic(waUART_Thread, sizeof(waUART_Thread), NORMALPRIO,
-  //                  UART_Thread,NULL);
+  chThdCreateStatic(waUART_Thread, sizeof(waUART_Thread), NORMALPRIO,
+                    UART_Thread,NULL);
 
   configureSPIFlash();
 
-  chThdCreateStatic(waCamera_Thread, sizeof(waCamera_Thread), HIGHPRIO,
-                    cameraControlThread,NULL);
+  //The UART thread should launch the camera thread at the appropriate time
+  //chThdCreateStatic(waCamera_Thread, sizeof(waCamera_Thread), HIGHPRIO,
+  //                  cameraControlThread,NULL);
 
   //Make this thread low priority
   chThdSetPriority( IDLEPRIO );
   //
-
+  chprintf(DBG_UART,"Threads Launched\r\n");
   while (TRUE){
      //chThdSleepMilliseconds(500);
      //gptPolledDelay(&GPTD3,delay);
