@@ -68,10 +68,9 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 
 #define RELEASE_VERSION
 
-#define COMMAND_SIZE 1
+#define COMMAND_SIZE 2
 
 //Define LOCAL_ECHO to echo characters sent through UART (debugging stuffs)
-#define LOCAL_ECHO
 
 
 extern WORKING_AREA(waUART_Thread, 512);
