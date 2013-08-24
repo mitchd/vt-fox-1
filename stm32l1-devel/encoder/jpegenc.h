@@ -13,11 +13,8 @@
 //---------------- J P E G ---------------
 
 // Application should provide this function for JPEG stream flushing
-#ifdef RELEASE
 extern void write_jpeg(uint8_t* buff, unsigned size);
-#else
-extern void write_jpeg(const unsigned char buff[], const unsigned size);
-#endif //RELEASE
+extern uint32_t jpeg_addr_ptr(void);
 
 typedef struct huffman_s
 {

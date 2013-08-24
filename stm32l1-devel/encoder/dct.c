@@ -16,12 +16,12 @@
 **
 **  RETURN: -
 ******************************************************************************/
-void dct(short pixels[8][8], short data[8][8])
+void dct(int16_t pixels[8][8], int16_t data[8][8])
 {
-	short rows[8][8];
+	int16_t rows[8][8];
 	unsigned          i;
 
-	static const short // Ci = cos(i*PI/16)*(1 << 14);
+	static const int16_t // Ci = cos(i*PI/16)*(1 << 14);
 		C1 = 16070,
 		C2 = 15137,
 		C3 = 13623,
@@ -35,8 +35,8 @@ void dct(short pixels[8][8], short data[8][8])
 	/* transform rows */
 	for (i = 0; i < 8; i++)
 	{
-		short s07,s16,s25,s34,s0734,s1625;
-		short d07,d16,d25,d34,d0734,d1625;
+		int16_t s07,s16,s25,s34,s0734,s1625;
+		int16_t d07,d16,d25,d34,d0734,d1625;
 
 		s07 = pixels[i][0] + pixels[i][7];
 		d07 = pixels[i][0] - pixels[i][7];
@@ -67,8 +67,8 @@ void dct(short pixels[8][8], short data[8][8])
 	/* transform columns */
 	for (i = 0; i < 8; i++)
 	{
-		short s07,s16,s25,s34,s0734,s1625;
-		short d07,d16,d25,d34,d0734,d1625;
+		int16_t s07,s16,s25,s34,s0734,s1625;
+		int16_t d07,d16,d25,d34,d0734,d1625;
 
 		s07 = rows[0][i] + rows[7][i];
 		d07 = rows[0][i] - rows[7][i];

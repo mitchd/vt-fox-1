@@ -164,13 +164,13 @@ static const unsigned char HCDClen[12] =
 	0x08, 0x09, 0x0a, 0x0b
 };
 
-static const unsigned short HYDCbits[12] =
+static const uint16_t HYDCbits[12] =
 {
 	0x0000, 0x0002, 0x0003, 0x0004, 0x0005, 0x0006, 0x000e, 0x001e,
 	0x003e, 0x007e, 0x00fe, 0x01fe
 };
 
-static const unsigned short HCDCbits[12] =
+static const uint16_t HCDCbits[12] =
 {
 	0x0000, 0x0001, 0x0002, 0x0006, 0x000e, 0x001e, 0x003e, 0x007e,
 	0x00fe, 0x01fe, 0x03fe, 0x07fe
@@ -197,7 +197,7 @@ static const unsigned char HYAClen[16][12] =
 	{0x0b, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x00}
 };
 
-static const unsigned short HYACbits[16][12] =
+static const uint16_t HYACbits[16][12] =
 {
 	{0xFFFA, 0xFFF0, 0xFFF1, 0xFFF4, 0xFFFB, 0xFFFA, 0xFFF8, 0xFFF8, 0xFFF6, 0xFF82, 0xFF83, 0x0000},	// 00 - 0f
 	{0x0000, 0xFFFC, 0xFFFB, 0xFFF9, 0xFFF6, 0xFFF6, 0xFF84, 0xFF85, 0xFF86, 0xFF87, 0xFF88, 0x0000},	// 10 - 1f
@@ -237,7 +237,7 @@ static const unsigned char HCAClen[16][12] =
 	{0x0a, 0x0f, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x00}
 };
 
-static const unsigned short HCACbits[16][12] =
+static const uint16_t HCACbits[16][12] =
 {
 	{0x0000, 0x0001, 0x0004, 0x000a, 0x0018, 0x0019, 0x0038, 0x0078, 0x01f4, 0x03f6, 0x0ff4, 0x0000},	// 00 - 0f
 	{0x0000, 0x000b, 0x0039, 0x00f6, 0x01f5, 0x07f6, 0x0ff5, 0xff88, 0xff89, 0xff8a, 0xff8b, 0x0000},	// 10 - 1f
@@ -288,7 +288,7 @@ static bitbuffer_t bitbuf;
 **
 **  RETURN: quantized value.
 ******************************************************************************/
-static short quantize(const short data, const unsigned short qt)
+static int16_t quantize(const int16_t data, const uint16_t qt)
 {
 	return (data*qt - (data>>15) + ((1<<(QTAB_SCALE-1))-1)) >> QTAB_SCALE;
 }
@@ -311,11 +311,11 @@ static short quantize(const short data, const unsigned short qt)
 static unsigned jpgn = 0;
 // code-stream output buffer, adjust its size if you need
 #ifdef RELEASE
-  #define BUFFSIZE SERIAL_BUFFERS_SIZE
+  #define BUFFSIZE (256)
 #else
   #define BUFFSIZE (128)
 #endif //RELEASE
-static unsigned char jpgbuff[BUFFSIZE];
+unsigned char jpgbuff[BUFFSIZE];
 
 static void writebyte(const unsigned char b)
 {
@@ -327,7 +327,7 @@ static void writebyte(const unsigned char b)
 	}
 }
 
-static void writeword(const unsigned short w)
+static void writeword(const uint16_t w)
 {
 	writebyte(w >> 8); writebyte(w);
 }
@@ -351,7 +351,7 @@ static void write_APP0info(void)
 }
 
 // should set width and height before writing
-static void write_SOF0info(const short height, const short width)
+static void write_SOF0info(const int16_t height, const int16_t width)
 {
 	writeword(0xFFC0);	//marker
 	writeword(17);		//length
@@ -518,7 +518,7 @@ static void flushbits(bitbuffer_t *pbb)
 **
 **  RETURN: huffman bits
 ******************************************************************************/
-static unsigned huffman_bits(const short value)
+static unsigned huffman_bits(const int16_t value)
 {
 	return value + (value >> 15);
 }
@@ -534,7 +534,7 @@ static unsigned huffman_bits(const short value)
 **
 **  RETURN: magnitude
 ******************************************************************************/
-static unsigned huffman_magnitude(const short value)
+static unsigned huffman_magnitude(const int16_t value)
 {
 	unsigned x = (value < 0)? -value: value;
 	unsigned m = 0;
@@ -556,7 +556,7 @@ static unsigned huffman_magnitude(const short value)
 **
 **  RETURN: -
 ******************************************************************************/
-void huffman_start(short height, short width)
+void huffman_start(int16_t height, int16_t width)
 {
 	writeword(0xFFD8); // SOI
 	write_APP0info();
@@ -616,13 +616,13 @@ void huffman_stop(void)
 **
 **  RETURN: -
 ******************************************************************************/
-void huffman_encode(huffman_t *const ctx, const short data[])
+void huffman_encode(huffman_t *const ctx, const int16_t data[])
 {
 	unsigned magn, bits;
 	unsigned zerorun, i;
-	short    diff;
+	int16_t    diff;
 
-	short    dc = quantize(data[0], ctx->qtable[0]);
+	int16_t    dc = quantize(data[0], ctx->qtable[0]);
 	// difference between old and new DC
 	diff = dc - ctx->dc;
 	ctx->dc = dc;
@@ -637,7 +637,7 @@ void huffman_encode(huffman_t *const ctx, const short data[])
 
 	for (zerorun = 0, i = 1; i < 64; i++)
 	{
-		const short ac = quantize(data[zig[i]], ctx->qtable[zig[i]]);
+		const int16_t ac = quantize(data[zig[i]], ctx->qtable[zig[i]]);
 
 		if (ac) {
 			while (zerorun >= 16) {
@@ -696,7 +696,7 @@ inline color RGB2Cr(const color r, const color g, const color b)
 }
 
 // chroma subsampling, i.e. converting a 16x16 RGB block into 8x8 Cb and Cr
-void subsample(RGB rgb[8][16], short cb[8][8], short cr[8][8])
+void subsample(RGB rgb[8][16], int16_t cb[8][8], int16_t cr[8][8])
 {
 	RGB pixel;
     unsigned int r;     // row index
@@ -707,8 +707,8 @@ void subsample(RGB rgb[8][16], short cb[8][8], short cr[8][8])
 		pixel.Red = (rgb[r][2*c].Red+rgb[r][2*c+1].Red)/2;
 		pixel.Green = (rgb[r][2*c].Green+rgb[r][2*c+1].Green)/2;
 		pixel.Blue = (rgb[r][2*c].Blue+rgb[r][2*c+1].Blue)/2;
-		cb[r][c] = (short)RGB2Cb( pixel.Red, pixel.Green, pixel.Blue )-128;
-		cr[r][c] = (short)RGB2Cr( pixel.Red, pixel.Green, pixel.Blue )-128;
+		cb[r][c] = (int16_t)RGB2Cb( pixel.Red, pixel.Green, pixel.Blue )-128;
+		cr[r][c] = (int16_t)RGB2Cr( pixel.Red, pixel.Green, pixel.Blue )-128;
 	}
 }
 #endif // ENABLE_RGB
@@ -718,9 +718,9 @@ void subsample(RGB rgb[8][16], short cb[8][8], short cr[8][8])
 RGB     RGB8x16[8][16]; // two 8x8 red/green/blue blocks
 #endif // ENABLE_RGB
 
-short   Y8x8[2][8][8];  // luminance
-short   Cb8x8[8][8];    // chrominance
-short   Cr8x8[8][8];    // chrominance
+int16_t   Y8x8[2][8][8];  // luminance
+int16_t   Cb8x8[8][8];    // chrominance
+int16_t   Cr8x8[8][8];    // chrominance
 
 #ifdef ENABLE_RGB
 // encode RGB 24 line [size: 15,360 bytes]
@@ -772,19 +772,19 @@ void encode_line_rgb24(uint8_t *    _line_buffer,
 
         // 1 Y-compression
         dct(Y8x8[0], Y8x8[0]);
-        huffman_encode(HUFFMAN_CTX_Y, (short*)Y8x8[0]);
+        huffman_encode(HUFFMAN_CTX_Y, (int16_t*)Y8x8[0]);
 
         // 2 Y-compression
         dct(Y8x8[1], Y8x8[1]);
-        huffman_encode(HUFFMAN_CTX_Y, (short*)Y8x8[1]);
+        huffman_encode(HUFFMAN_CTX_Y, (int16_t*)Y8x8[1]);
 
         // 1 Cb-compression
         dct(Cb8x8, Cb8x8);
-        huffman_encode(HUFFMAN_CTX_Cb, (short*)Cb8x8);
+        huffman_encode(HUFFMAN_CTX_Cb, (int16_t*)Cb8x8);
 
         // 1 Cr-compression
         dct(Cr8x8, Cr8x8);
-        huffman_encode(HUFFMAN_CTX_Cr, (short*)Cr8x8);
+        huffman_encode(HUFFMAN_CTX_Cr, (int16_t*)Cr8x8);
     }
 
     // write restart interval termination character
@@ -851,19 +851,19 @@ void encode_line_rgb16(uint8_t *    _line_buffer,
 
         // 1 Y-compression
         dct(Y8x8[0], Y8x8[0]);
-        huffman_encode(HUFFMAN_CTX_Y, (short*)Y8x8[0]);
+        huffman_encode(HUFFMAN_CTX_Y, (int16_t*)Y8x8[0]);
 
         // 2 Y-compression
         dct(Y8x8[1], Y8x8[1]);
-        huffman_encode(HUFFMAN_CTX_Y, (short*)Y8x8[1]);
+        huffman_encode(HUFFMAN_CTX_Y, (int16_t*)Y8x8[1]);
 
         // 1 Cb-compression
         dct(Cb8x8, Cb8x8);
-        huffman_encode(HUFFMAN_CTX_Cb, (short*)Cb8x8);
+        huffman_encode(HUFFMAN_CTX_Cb, (int16_t*)Cb8x8);
 
         // 1 Cr-compression
         dct(Cr8x8, Cr8x8);
-        huffman_encode(HUFFMAN_CTX_Cr, (short*)Cr8x8);
+        huffman_encode(HUFFMAN_CTX_Cr, (int16_t*)Cr8x8);
     }
 
     // write restart interval termination character
@@ -907,19 +907,19 @@ void encode_line_yuv(uint8_t *    _line_buffer,
 
         // 1 Y-compression
         dct(Y8x8[0], Y8x8[0]);
-        huffman_encode(HUFFMAN_CTX_Y, (short*)Y8x8[0]);
+        huffman_encode(HUFFMAN_CTX_Y, (int16_t*)Y8x8[0]);
 
         // 2 Y-compression
         dct(Y8x8[1], Y8x8[1]);
-        huffman_encode(HUFFMAN_CTX_Y, (short*)Y8x8[1]);
+        huffman_encode(HUFFMAN_CTX_Y, (int16_t*)Y8x8[1]);
 
         // 1 Cb-compression
         dct(Cb8x8, Cb8x8);
-        huffman_encode(HUFFMAN_CTX_Cb, (short*)Cb8x8);
+        huffman_encode(HUFFMAN_CTX_Cb, (int16_t*)Cb8x8);
 
         // 1 Cr-compression
         dct(Cr8x8, Cr8x8);
-        huffman_encode(HUFFMAN_CTX_Cr, (short*)Cr8x8);
+        huffman_encode(HUFFMAN_CTX_Cr, (int16_t*)Cr8x8);
     }
 
     // write restart interval termination character
@@ -931,7 +931,7 @@ void encode_line_yuv(uint8_t *    _line_buffer,
 void embed_vt_watermark(void)
 {
     // luminance value
-    short v = 60;
+    int16_t v = 60;
 
     // left half of the 'V'
     Y8x8[0][0][0] = v;  Y8x8[0][0][1] = v;

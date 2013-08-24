@@ -48,6 +48,8 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 
 #define _CAMERA_IFACE_
 
+extern uint8_t cameraHealth;
+extern uint8_t cameraThreadDone;
 #define CAM_ADDR_W	0x42
 #define CAM_ADDR_R      0x43
 
@@ -220,7 +222,6 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #define FIFO_RRST	1    //Read pointer reset
 #define FIFO_OE		2    //Read output enable
 #define FIFO_RCLK	3    //Read clock
-
 
 
 //Setup the Camera SCCB

@@ -40,20 +40,9 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 
 /*uart_iface.h
  *
- *
  *This is the definition of the uart communication worker thread
  *
  *It will handle all of our interfacing with the IHU at 38.4 kbaud
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
  *
  */
 
@@ -98,5 +87,12 @@ msg_t UART_Thread(void* arg);
 #define RESP_READY (uint8_t)'Y'
 #define RESP_FAILED (uint8_t)'F'
 
+//Signalling variables
+extern uint8_t cameraHealth;
+#define CAMERA_HEALTHY 1
+#define CAMERA_FAILED 0
+extern uint8_t cameraThreadDone;
+#define CAMERA_THREAD_BUSY 0
+#define CAMERA_THREAD_DONE 1
 
 #endif

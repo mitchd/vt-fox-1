@@ -21,28 +21,30 @@
 *******************************************************************************/
 void send_CMD(int ser, int msgtype) {
     int ret = 0;
-    char msg[2];
+    char msg[6]; //4 bytes for header
+
+    //Add command to message
 #if DUMMY_IHU
     if (msgtype == TT) {
-        msg[0] = 'T';
-        msg[1] = 'T';
+        msg[4] = 'T';
+        msg[5] = 'T';
     }
     else if (msgtype == RR) {
-        msg[0] = 'R';
-        msg[1] = 'R';
+        msg[4] = 'R';
+        msg[5] = 'R';
     } 
 #elif DUMMY_EXP4
     if (msgtype == NN) {
-        msg[0] = 'N';
-        msg[1] = 'N';
+        msg[4] = 'N';
+        msg[5] = 'N';
     }
     else if (msgtype == YY) {
-        msg[0] = 'Y';
-        msg[1] = 'Y';
+        msg[4] = 'Y';
+        msg[5] = 'Y';
     }
     else if (msgtype == FF) {
-        msg[0] = 'F';
-        msg[1] = 'F';
+        msg[4] = 'F';
+        msg[5] = 'F';
     }
 #endif
     else {
@@ -50,6 +52,18 @@ void send_CMD(int ser, int msgtype) {
         exit(1);
     }
 
+    //Add header
+    msg[1] = MSG_VER>>8;
+    msg[0] = MSG_VER;     
+#if DUMMY_IHU
+    msg[3] = IHU_VER>>8;
+    msg[2] = IHU_VER;
+#elif DUMMY_EXP4
+    msg[3] = EXP4_VER>>8;
+    msg[2] = EXP4_VER;
+#endif
+
+    //Send Message
     if ((ret = write(ser,msg,sizeof msg)) == -1)
         printf("write failed with %d strerror(%s)\n",ret,strerror(-ret));
     else
@@ -77,35 +91,63 @@ void send_CMD(int ser, int msgtype) {
 #       (TT) Transmit Data Block
 *******************************************************************************/
 int get_REPLY(int ser) {
-    char rcvd[2];
+    char rcvd[6];
+    uint16_t msg_ver = 0;
+#if DUMMY_IHU 
+    int ihu_ver = 0; 
+#elif DUMMY_EXP4
+    int exp4_ver = 0;
+#endif
     int ret = 0;
     int err = 0;
 
     if ((ret = read(ser,rcvd,sizeof rcvd)) == -1) {
         err = errno;
         printf("ERROR: read failed with %d strerror(%s)\n",err,strerror(err));
+        exit(1);
         return -1;
     }
 
-    printf("(%c%c) received\n",rcvd[0],rcvd[1]);
+    printf("(%c%c) received\n",rcvd[4],rcvd[5]);
+
+    //Verify versions
+    memcpy(&msg_ver,rcvd,2);    //sizeof(uint16_t));
+
+    if (MSG_VER != msg_ver) {
+        printf("WARNING: msg version mismatch %d vs %d\n",MSG_VER,msg_ver);
+    }
+#if DUMMY_IHU
+
+    memcpy(&ihu_ver,rcvd+2,sizeof(uint16_t));
+
+    if (IHU_VER != ihu_ver) {
+        printf("WARNING: ihu version mismatch %d vs %d\n",IHU_VER,ihu_ver);
+    }
+#elif DUMMY_EXP4
+    memcpy(&exp4_ver,rcvd+2,sizeof(uint16_t));
+
+    if (EXP4_VER != exp4_ver) {
+        printf("WARNING: exp4 version mismatch %d vs %d\n",EXP4_VER,exp4_ver);
+    }
+#endif
 
 #if DUMMY_IHU
-    if ((rcvd[0] == 'N') && (rcvd[1] == 'N'))
+    if ((rcvd[4] == 'N') && (rcvd[5] == 'N'))
         return NN;
-    else if ((rcvd[0] == 'Y') && (rcvd[1] == 'Y'))
+    else if ((rcvd[4] == 'Y') && (rcvd[5] == 'Y'))
         return YY;
-    else if ((rcvd[0] == 'F') && (rcvd[1] == 'F'))
+    else if ((rcvd[4] == 'F') && (rcvd[5] == 'F'))
         return FF;
 #elif DUMMY_EXP4
-    if ((rcvd[0] == 'R') && (rcvd[1] == 'R')) {
+    if ((rcvd[4] == 'R') && (rcvd[5] == 'R')) {
         return RR;
     }
-    else if ((rcvd[0] == 'T') && (rcvd[1] == 'T')) {
+    else if ((rcvd[4] == 'T') && (rcvd[5] == 'T')) {
         return TT;
     }
 #endif
     else {
-        printf("Reply (%c%c) not recognized\n",rcvd[0],rcvd[1]);
+        printf("Reply (%c%c) not recognized\n",rcvd[4],rcvd[5]);
         return -1;
     }
 }
@@ -125,7 +167,19 @@ int get_REPLY(int ser) {
 *******************************************************************************/
 void get_IMG(int ser) {
 
+    char msg[6];
     printf (" --> get_IMG(int) is still unimplemented\n");
+    //Add header to message
+    msg[1] = MSG_VER>>8;
+    msg[0] = MSG_VER;     
+#if DUMMY_IHU
+    msg[3] = IHU_VER>>8;
+    msg[2] = IHU_VER;
+#elif DUMMY_EXP4
+    msg[3] = EXP4_VER>>8;
+    msg[2] = EXP4_VER;
+#endif
+
     /*
 #for loop here
     msg = []
@@ -168,32 +222,67 @@ void get_IMG(int ser) {
 *******************************************************************************/
 void send_IMG(int ser) {
 
-    printf (" --> send_IMG(int) is still unimplemented\n");
+    //printf (" --> send_IMG(int) is still unimplemented\n");
+
+    //uint16_t desc = 0;
+    //int i = 0;
+    int j = 0;
+    char msg[6];
+    FILE * fp;
+    char first[1],second[1];
+
+    //This needs to be moved to after the file is read
+    //msg = (char *)malloc(6);
+
+    //Add header to message
+    msg[1] = MSG_VER>>8;
+    msg[0] = MSG_VER;     
+#if DUMMY_IHU
+    msg[3] = IHU_VER>>8;
+    msg[2] = IHU_VER;
+#elif DUMMY_EXP4
+    msg[3] = EXP4_VER>>8;
+    msg[2] = EXP4_VER;
+#endif
+
+    fp = fopen("imgs/640x480_test.jpg","w+");
+
+    printf("DEBUG: top of while\n");
+    while(fscanf(fp,"%c",first)) {
+        if (atoi(first) == 0xFF) {
+           printf("DEBUG: found 0xFF\n");
+           fscanf(fp,"%c",second); 
+           if (((atoi(second)>>4) == 0xD) && ((atoi(second) & 0xF) < 8)) {
+                //found RST marker 
+                j++;
+                printf("found RST marker %d\n",j);
+           }
+        }
+    }
+
+    /* Note */
+    /**************************************************************************
+     * I added the structs to simulate the process EXP4 will take. These 
+     * structs will be filled straight from the MRAM.
+     *************************************************************************/
     /*
-#for loop here
-    msg = []
-    for i in range(0,5):
-        data = ser.read(1)
-        msg.append(struct.unpack("B", data)[0])
-        print 'msg[' + str(i) + '] = ' + str(msg[i])
+    system_data sd;
+    line_data ld;
 
-    descriptor = msg[1];#struct.unpack("P", data)
-    print 'd: ' + str(descriptor)
+    //search for RST in jpg and fill line data
+    for (i=0;i<(60);i++) {
+        ld[i] = ;
+    }
 
-    data = ser.read(2)
-    descriptor = struct.unpack("<H", data)[0]
-    data1 = ser.read(1) #descriptor&0x3FF)
-    data2 = ser.read(2)
-    print 'd: ' + str(descriptor)
+    for (i=1;i<(60+1);i++) {
 
-    linenum = descriptor >> 10
-    payload = struct.unpack("<B", data1)[0]
-    chksum = struct.unpack("<H", data2)[0]
+        //Add descriptor
+        desc = (i<<10) + ;  //add in payloads
 
-    print 'p: ' + str(payload)
-    print 'l: ' + str(linenum)
-    print 'pl: ' + str(descriptor&0x3FF)
-    print 'c: ' + str(chksum)
+        //pack desc into two chars
+        msg[4] = (desc>>8);
+        msg[5] = (desc&0xFF); 
+    }
     */
 }
 

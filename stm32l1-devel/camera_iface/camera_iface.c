@@ -375,7 +375,7 @@ void setupCamPort(void){
   palClearPad(FIFO_CTL_PORT, FIFO_OE);
   palSetPadMode(FIFO_CTL_PORT, FIFO_RCLK, PAL_MODE_OUTPUT_PUSHPULL);
   palSetPad(FIFO_CTL_PORT, FIFO_RCLK);
-  powerdownCam();
+  //powerdownCam();
   return;
 }
 
@@ -411,7 +411,7 @@ msg_t configureCam(void){
   for( tmp = 0; tmp < CONFIG_PAIRS; tmp++ )
     cameraWriteCycle( cam_config[tmp][0], cam_config[tmp][1] );
   tmp = checkCameraSanity();
-  powerdownCam();
+  //powerdownCam();
   return (msg_t)tmp;
 }
 
@@ -448,7 +448,7 @@ msg_t setupSegment( uint8_t segment )
   //Verify write operations were successful
   uint8_t tmp;
   tmp = cameraReadCycle( CAM_VREF );
-  chprintf(IHU_UART,"%x\t%x\r\n",vref,tmp);
+  //chprintf(IHU_UART,"%x\t%x\r\n",vref,tmp);
   if( tmp != vref )
     return -1;
 
@@ -503,6 +503,8 @@ msg_t cameraControlThread(void* arg){
   const uint16_t IMG_WIDTH = 640;
   const uint16_t READ_SIZE = IMG_WIDTH*2*8;
   const uint16_t NUM_READS = 30;
+  cameraThreadDone = CAMERA_THREAD_BUSY;
+  cameraHealth = CAMERA_HEALTHY;
   chThdSetPriority( HIGHPRIO );
   //chprintf(IHU_UART,"Setup Timer\r\n");
   prepareTimer();
@@ -516,7 +518,7 @@ msg_t cameraControlThread(void* arg){
   //chprintf(IHU_UART,"Configure Camera\r\n");
   msg_t success = configureCam();
   uint8_t segment;
-  //jpeg_init();
+  jpeg_init();
   for( segment = 0; segment < 2; segment++ )
   {
     //Wakeup Camera
@@ -529,6 +531,8 @@ msg_t cameraControlThread(void* arg){
       if( setupSegment( segment ) != RDY_OK ){
         //segmentNumber--;
         chprintf(IHU_UART,"SETUP FAILED\r\n");
+        cameraHealth = CAMERA_FAILED;
+        cameraThreadDone = CAMERA_THREAD_DONE;
       }else{
         //Reset the read pointer
         resetReadPointer();
@@ -553,12 +557,29 @@ msg_t cameraControlThread(void* arg){
 	  fifoGrabBytes( pixelData, 0, 1 );
         for( bulk_reads=0; bulk_reads < NUM_READS; bulk_reads++ ){
           fifoGrabBytes( pixelData, READ_SIZE, 0 );
-          //encode_line_yuv( pixelData, bulk_reads + NUM_READS*segment );
-          sdWrite( IHU_UART_DEV, &pixelData[0], READ_SIZE );
+          //Process the line
+          encode_line_yuv( pixelData, bulk_reads + NUM_READS*segment );
+          //sdWrite( IHU_UART_DEV, &pixelData[0], READ_SIZE );
         }
       }
     }
   }
-  //jpeg_close();
-  while(TRUE); 
+  jpeg_close();
+#ifndef RELEASE
+  uint32_t image_end = jpeg_addr_ptr();
+  uint32_t image_start = IMAGE_DATA_START;
+  uint32_t num_steps = (image_end-image_start)/SERIAL_BUFFERS_SIZE;
+  uint32_t image_ptr = image_start;
+  uint32_t step = 0;
+  for(; step < num_steps; step++)
+  {
+    flashReadBytes( image_ptr, pixelData, SERIAL_BUFFERS_SIZE );
+    sdWrite( IHU_UART_DEV, pixelData, SERIAL_BUFFERS_SIZE );
+    image_ptr += SERIAL_BUFFERS_SIZE;
+  }
+  uint32_t remainder = image_end - image_ptr;
+  flashReadBytes( image_ptr, pixelData, remainder );
+  sdWrite( IHU_UART_DEV, pixelData, remainder );
+#endif //~RELEASE
+  cameraThreadDone = CAMERA_THREAD_DONE;
 }

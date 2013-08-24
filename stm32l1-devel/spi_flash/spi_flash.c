@@ -109,7 +109,6 @@ void configureSPIFlash(void){
   spiSend( &SPID1, 1, &spi_cmd );
   spiUnselect( &SPID1 );
   //Wait until the device is ready before releasing to the program
-  //checkBusy();
   flashSleep();
   spiReleaseBus( &SPID1 );
 }
@@ -127,7 +126,6 @@ void flashWriteByte( uint32_t addr, uint8_t data ){
   flashWake();
   chThdSleepMicroseconds(400);
   //Wait until there is no write in progress
-  //checkBusy();
   //Set the command
   flash_cmd = FLASH_WRITE_ENABLE;
   //NSS Low
@@ -262,3 +260,36 @@ void flashReadBytes( uint32_t addr, uint8_t* data, uint32_t n ){
 
   return;
 }
+
+/* Read image line number _line_ from SPI flash,
+ * write it to memory pointed to be _data_, allocated
+ * by caller.  Returns length of copied line, or 0
+ * in the case of an error.
+ */
+
+uint16_t readLineFromSPI(int line, uint8_t *data) {
+  line_data *ld_spi = &((line_data*)IMAGE_DATA_START)[line];
+  line_data ld;
+  uint32_t len;
+  uint8_t acc;
+  unsigned int i;
+
+  /* Pull the line_data struct for this line from spi flash */
+  flashReadBytes((uint32_t)ld_spi, (uint8_t*)&ld, sizeof(line_data));    
+  /* Using info in line_data struct, read the actual line */
+  len = ld.end_addr - ld.start_addr;
+  flashReadBytes(ld.start_addr, data, len);
+  /* Validate the checksum */
+  
+  for (i = 0, acc = 0; i < len; ++i) {
+    acc += data[i];
+  }
+
+  if (acc != ld.chksum) {
+    return 0;
+  }
+
+  return len;
+
+}
+      

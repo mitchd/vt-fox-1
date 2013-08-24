@@ -45,7 +45,8 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 
 //WORKING_AREA(waUART_Thread, 512);
 WORKING_AREA(waCamera_Thread, 10240+5*1024);
-
+uint8_t cameraHealth;
+uint8_t cameraThreadDone;
 /*
  * Application entry point.
  */
@@ -69,7 +70,7 @@ int main(void) {
   palSetPadMode(GPIOB, 10, PAL_MODE_ALTERNATE(7));
   palSetPadMode(GPIOB, 11, PAL_MODE_ALTERNATE(7));
 
-  /* Activate serial driver 4 for debug
+  /* Activate serial driver 1 for debug
    *  PA9 (TX) and PA10(RX)
    */
   sdStart(DBG_UART_DEV, NULL);
@@ -90,15 +91,6 @@ int main(void) {
   chThdSetPriority( IDLEPRIO );
   //
 
-  //#define CLK_DELAY 640
-  //#define FIFO_DELAY 5
-  //#define PWR_DELAY 32000
-  //static const GPTConfig gpt3cfg = {
-  //  32000000,    /* 32MHz timer clock.*/
-  //  NULL         /* Timer callback.*/
-  //};
-  //gptStart(&GPTD3, &gpt3cfg);
-  //const uint32_t delay = 32000000/4; 
   while (TRUE){
      //chThdSleepMilliseconds(500);
      //gptPolledDelay(&GPTD3,delay);
