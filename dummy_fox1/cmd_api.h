@@ -6,6 +6,9 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <string.h>
+#include <stdint.h>
+
 
 //Messages
 // IHU
@@ -15,6 +18,22 @@
 #define NN 2
 #define YY 3
 #define FF 4
+
+#define IHU_VER     100 //version 1.00
+#define EXP4_VER    100 //version 1.00
+#define MSG_VER     101 //version 1.01
+
+//structs used in spi_flash.h
+typedef struct {
+    uint8_t line_num;
+    uint32_t start_addr;
+    uint32_t end_addr;
+    uint8_t chksum;
+} line_data;
+
+typedef struct {
+    line_data line[60];
+} system_data;
 
 
 //prototypes

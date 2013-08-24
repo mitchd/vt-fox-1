@@ -56,8 +56,7 @@ int main(int argc,char **argv) {
 #elif DUMMY_EXP4
     printf( "\nBEGINNING OF EXPIREMENT 4 COMMUNICATIONS\n");
 #endif
-    printf( "-------------------------------------------------------------\n\n");
-
+    printf( "------------------------------------------------------------\n\n");
 
     int state = 0;
 #if DUMMY_IHU
