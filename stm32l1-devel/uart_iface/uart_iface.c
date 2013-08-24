@@ -47,8 +47,7 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
  * It's primary tasks are:
  *
  *  1) Receive and parse commands from the IHU
- *  2) Signal the main thread to initiate a camera capture
- *  3) Send requested data to the IHU
+ *  2) Send requested data to the IHU
  *      A) Telemetry (if implemented)
  *      B) jpeg data
  *
@@ -68,7 +67,7 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
  *  names are fairly self-explanatory
  *
  * COMMAND_SIZE (defined in uart_iface.h):
- *  We expect commands from the IHU to be a certain length (1-4 bytes,
+ *  We expect commands from the IHU to be a certain length (1-6 bytes,
  *  depending on the error correction we want in the actual commands or
  *  whatev).
  *
@@ -85,6 +84,7 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
  */
 
 void UART_Reply_Failed(uint8_t *buffer) {
+    // Generate and return the message reply if the camera has failed
     buffer[0] = MESSAGE_VERSION;
     buffer[2] = SOFTWARE_BUILD;
     buffer[4] = RESP_FAILED;
@@ -93,6 +93,7 @@ void UART_Reply_Failed(uint8_t *buffer) {
 }
 
 void UART_Reply_NReady(uint8_t *buffer) {
+    // Generate and return the message reply if the camera is not ready
     buffer[0] = MESSAGE_VERSION;
     buffer[2] = SOFTWARE_BUILD;
     buffer[4] = RESP_NREADY;
@@ -101,6 +102,7 @@ void UART_Reply_NReady(uint8_t *buffer) {
 }
 
 void UART_Reply_Ready(uint8_t *buffer) {
+    // Generate and return the message reply if the camera is ready
     buffer[0] = MESSAGE_VERSION;
     buffer[2] = SOFTWARE_BUILD;
     buffer[4] = RESP_READY;
@@ -187,10 +189,11 @@ msg_t UART_Thread(void* arg) {
                             #ifdef UART_DBG_PRINT
                             chprintf((BaseChannel*)&SD1, "UART command ready query received\r\n");
                             #endif
-                            // Poll for and return camera status
+                            // Check if the camera has failed
                             if (!cameraHealth) {
                                 UART_Reply_Failed(write_cmd_buffer);
                             } else {
+                                // Return the status of the camera data
                                 if (cameraThreadDone == CAMERA_THREAD_BUSY) {
                                     UART_Reply_NReady(write_cmd_buffer);
                                 } else if (cameraThreadDone == CAMERA_THREAD_DONE) {
@@ -202,11 +205,12 @@ msg_t UART_Thread(void* arg) {
                             #ifdef UART_DBG_PRINT
                             chprintf((BaseChannel*)&SD1, "UART command transmit received\r\n");
                             #endif
-                            // Return camera data
+                            // Check if the camera has failed
                             if (!cameraHealth) {
                                 UART_Reply_Failed(write_cmd_buffer);
                             } else {
-
+                                // Return the camera data here
+                                
                             }
                             break;
                         default:
