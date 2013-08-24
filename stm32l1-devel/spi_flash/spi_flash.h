@@ -174,4 +174,14 @@ void	flashWriteBytes( uint32_t addr, uint8_t* data, uint32_t n );
  */
 void	flashReadBytes( uint32_t addr, uint8_t* data, uint32_t n );
 
+
+/* Read line of image data from SPI
+ * - Determine addres of line_data struct in SPI memory
+ * - Read contents of line_data struct into main memory
+ * - Determine address/length of line data from line_data struct
+ * - Copy from SPI to main memory at location data
+ * - Validate checksum while doing so?
+ */
+uint16_t readLineFromSPI(int line, uint8_t *data);
+
 #endif
