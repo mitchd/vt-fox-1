@@ -219,6 +219,7 @@ msg_t UART_Thread(void* arg) {
             }
         }
         // No idea what this event is for, but we clear it anyways
+    }
     return 0;
 }
 
