@@ -140,12 +140,14 @@ msg_t UART_Thread(void* arg) {
                                         CHN_OUTPUT_EMPTY;
     chEvtRegisterMask( &(IHU_UART_DEV.event), &serial_events, myUART_events );
 
-    // Make our read buffer the same size as the buffer used with the serial device 
+    // Make our read buffer the same size as the buffer used with the serial 
+    // device 
     uint8_t read_buffer[MESSAGE_CMD_SIZE];
     uint8_t write_cmd_buffer[MESSAGE_CMD_REPLY_SIZE] = {0};
     uint8_t write_data_buffer[MESSAGE_DATA_SIZE];
     uint8_t i;
-
+    int line = 0;
+    uint8_t lineData[1023];
     // Recorded events
     eventmask_t events;
 
@@ -171,7 +173,8 @@ msg_t UART_Thread(void* arg) {
                 chprintf(DBG_UART, "UART overrun error!\r\n");
                 #endif
             } else {
-                // Ensure that the message version is correct and bytes 4 and 5 are identical
+                // Ensure that the message version is correct and bytes 4 and 5
+                // are identical
                 if (read_buffer[0] != MESSAGE_VERSION || read_buffer[1] != 0x0) {
                     #ifdef UART_DBG_PRINT
                     chprintf(DBG_UART, "UART message version incorrect!\r\n");
@@ -207,12 +210,22 @@ msg_t UART_Thread(void* arg) {
                             if (!cameraHealth) {
                                 UART_Reply_Failed(write_cmd_buffer);
                             } else {
-                                // Return the camera data here
-                                ;
+                                uint16_t numBytes;
+                                numBytes = readLineFromSPI( line++, &lineData[0] );
+				//readLineFromSPI returns 0 if internal chksum
+				//fails
+				//TODO:  Check to see what desired operation is
+				//when this happens
+                                if(!numBytes){
+				    UART_Reply_Failed(write_cmd_buffer);
+				} else {
+                                   UART_Reply_Data(line, numBytes, &lineData[0],write_cmd_buffer); 
+				}
                             }
                             break;
                         default:
                             // ???
+                            // PROFIT!
                             break;
                     }
                 }
