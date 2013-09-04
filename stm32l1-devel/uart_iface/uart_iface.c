@@ -89,7 +89,7 @@ void UART_Reply_Failed(uint8_t *buffer) {
     buffer[2] = SOFTWARE_BUILD;
     buffer[4] = RESP_FAILED;
     buffer[5] = RESP_FAILED;
-    sdAsynchronousWrite(&SD3, buffer, MESSAGE_CMD_REPLY_SIZE);
+    sdAsynchronousWrite(IHU_UART_DEV, buffer, MESSAGE_CMD_REPLY_SIZE);
 }
 
 void UART_Reply_NReady(uint8_t *buffer) {
@@ -98,7 +98,7 @@ void UART_Reply_NReady(uint8_t *buffer) {
     buffer[2] = SOFTWARE_BUILD;
     buffer[4] = RESP_NREADY;
     buffer[5] = RESP_NREADY;
-    sdAsynchronousWrite(&SD3, buffer, MESSAGE_CMD_REPLY_SIZE);
+    sdAsynchronousWrite(IHU_UART_DEV, buffer, MESSAGE_CMD_REPLY_SIZE);
 }
 
 void UART_Reply_Ready(uint8_t *buffer) {
@@ -107,7 +107,7 @@ void UART_Reply_Ready(uint8_t *buffer) {
     buffer[2] = SOFTWARE_BUILD;
     buffer[4] = RESP_READY;
     buffer[5] = RESP_READY;
-    sdAsynchronousWrite(&SD3, buffer, MESSAGE_CMD_REPLY_SIZE);
+    sdAsynchronousWrite(IHU_UART_DEV, buffer, MESSAGE_CMD_REPLY_SIZE);
 }
 
 void UART_Reply_Data(uint8_t line_ID, uint16_t length, uint8_t *data, uint8_t *buffer) {
@@ -126,19 +126,19 @@ void UART_Reply_Data(uint8_t line_ID, uint16_t length, uint8_t *data, uint8_t *b
     buffer[6+length+0] = chksum;
     buffer[6+length+1] = chksum >> 8;
 
-    sdAsynchronousWrite(&SD3, buffer, MESSAGE_DATA_REPLY_SIZE + length);
+    sdAsynchronousWrite(IHU_UART_DEV, buffer, MESSAGE_DATA_REPLY_SIZE + length);
 }
 
 msg_t UART_Thread(void* arg) {
     (void) arg;
 
-    // Register this as an event listener for events from SD3
+    // Register this as an event listener for events from IHU_UART_DEV
     EventListener serial_events;
     // Events received from the serial device
     const eventmask_t myUART_events = CHN_INPUT_AVAILABLE | 
                                         SD_OVERRUN_ERROR | 
                                         CHN_OUTPUT_EMPTY;
-    chEvtRegisterMask( &(SD3.event), &serial_events, myUART_events );
+    chEvtRegisterMask( &(IHU_UART_DEV.event), &serial_events, myUART_events );
 
     // Make our read buffer the same size as the buffer used with the serial device 
     uint8_t read_buffer[MESSAGE_CMD_SIZE];
@@ -155,7 +155,7 @@ msg_t UART_Thread(void* arg) {
 
         if (events & CHN_INPUT_AVAILABLE) {
             // Blocks until we have read a set number of bytes
-            sdRead(&SD3, read_buffer, MESSAGE_CMD_SIZE);
+            sdRead(IHU_UART_DEV, read_buffer, MESSAGE_CMD_SIZE);
 
             #ifdef UART_DBG_PRINT
             chprintf(DBG_UART, "UART data received: \r\n");
@@ -218,7 +218,6 @@ msg_t UART_Thread(void* arg) {
                 }
             }
         }
-        // No idea what this event is for, but we clear it anyways
     }
     return 0;
 }
