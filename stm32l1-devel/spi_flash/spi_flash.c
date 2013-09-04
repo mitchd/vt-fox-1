@@ -281,7 +281,7 @@ uint16_t readLineFromSPI(int line, uint8_t *data) {
   len = ld.end_addr - ld.start_addr;
   flashReadBytes(ld.start_addr, data, len);
   /* Validate the checksum */
-  
+  /* We'll disable this for the time being
   for (i = 0, acc = 0; i < len; ++i) {
     acc += data[i];
   }
@@ -289,7 +289,7 @@ uint16_t readLineFromSPI(int line, uint8_t *data) {
   if (acc != ld.chksum) {
     return 0;
   }
-
+  */
   return len;
 
 }
