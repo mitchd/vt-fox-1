@@ -53,21 +53,21 @@ void send_CMD(int ser, int msgtype) {
     }
 
     //Add header
-    msg[1] = MSG_VER>>8;
-    msg[0] = MSG_VER;     
+    msg[0] = MSG_VER>>8;
+    msg[1] = MSG_VER;     
 #if DUMMY_IHU
-    msg[3] = IHU_VER>>8;
-    msg[2] = IHU_VER;
+    msg[2] = IHU_VER>>8;
+    msg[3] = IHU_VER;
 #elif DUMMY_EXP4
-    msg[3] = EXP4_VER>>8;
-    msg[2] = EXP4_VER;
+    msg[2] = EXP4_VER>>8;
+    msg[3] = EXP4_VER;
 #endif
 
     //Send Message
     if ((ret = write(ser,msg,sizeof msg)) == -1)
         printf("write failed with %d strerror(%s)\n",ret,strerror(-ret));
     else
-        printf("sent %c%c (%d bytes)\n",msg[0],msg[1],ret);
+        printf("sent %c%c (%d bytes)\n",msg[4],msg[5],ret);
 }
 
 /*******************************************************************************
@@ -336,7 +336,7 @@ int serial_SETUP(char * ser_device) {
     options.c_iflag &= ~(IXON | IXOFF | IXANY );
     options.c_oflag &= ~OPOST;
     */
-    options.c_cflag = B38400 | CRTSCTS | CS8 | CLOCAL | CREAD;
+    options.c_cflag = B38400 | CS8 | CLOCAL | CREAD;
     options.c_iflag = 0;//IGNCR;
     options.c_oflag = 0;
     options.c_lflag = 0;//ICANON;
