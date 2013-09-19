@@ -11,7 +11,7 @@
 #include "cmd_api.h"
 
 //Defines
-#define DEFAULT_DEV "/dev/ttyAMA0"
+#define DEFAULT_DEV "/dev/ttyS0"
 #define DEFAULT_BAUDRATE 38400
 
 /*******************************************************************************

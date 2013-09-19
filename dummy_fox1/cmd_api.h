@@ -21,7 +21,7 @@
 
 #define IHU_VER     100 //version 1.00
 #define EXP4_VER    100 //version 1.00
-#define MSG_VER     101 //version 1.01
+#define MSG_VER     110 //version 1.01
 
 //structs used in spi_flash.h
 typedef struct {
