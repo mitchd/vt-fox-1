@@ -4,9 +4,10 @@ experiment.
 There are two main projects from which this code derives:
 
 ChibiOS/RT 2.4.3
-jpegant
+jpegant (GPLv3 release by author permission)
 
-ChibiOS/RT is unmodified, and retains its source structure in ./os/
+ChibiOS/RT is modified to support our processor, and retains its source structure
+in ./os/
 
 jpegant is modified from its original version, and best efforts are made to
 annotate the differences between the released jpegant and the contributions made
@@ -14,8 +15,9 @@ by VTARA.
 
 All of the source code within this project is copyright (2012, 2013):
 
-Joseph "Mitch" Davis, WQ3C, mitchd@vt.edu
+Joseph "Mitch" Davis, WQ3C, mitchd@davis-house.net
 Kevin Burns, KJ4SYL, kevinpd@vt.edu
+Other project members (Dr. Joe Gaeddert, Dr. Bob McGwier, et al)
 Virginia Polytechnic Institute and State University
 
 This entire project is licensed under the GNU Public License (GPL) Version 3:
