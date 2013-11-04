@@ -1,0 +1,4 @@
+*.o
+*.pdf
+*~
+STM32L1_Code/build/*
