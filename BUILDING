@@ -1,0 +1,7 @@
+Build yourself an arm-none-eabi toolchain.
+
+A Howto is at this website: http://www.kunen.org/uC/gnu_tool.html
+
+We use more recent versions of binutils, gcc, and gdb.
+
+A prebuilt tree is available at: http://wq3c.net/arm-cc.tar.bz2
