@@ -9,38 +9,10 @@ housekeeping unit)
 
 Folder descriptions:
 
-datasheets/
+IHU_Simulator/
 
--Contains datasheets of the modules used in both prototyping and the board
-specification
+- This contains x86 code to interface with a prototype Exp4 board.  It emulates the IHU per the specified ICD.  The simulator will also demonstrate how a jpeg image is re-assembled.
 
-pin_descriptions/
+STM32L1_Code/
 
--Contains a spreadsheet which maps out the pins of the final board and provides
-a reference for the pin alternate function register configuration bits
-
-jpegant/
-
--This is the jpeg compression library that we're using.  A stripped-down CLI
-version is located in: jpegantt/jpegant-stripped/src/encoder
--The stripped-down CLI version uses a file containing raw RGB values for a
-640x480 picture to convert to jpeg
-
-stm32f4-devel/
-
--Contains the ChibiOS/RT source tree to work with the stm32f4-discovery board
-
-stm32l1-devel/
-
--Will contain the ChibiOS/RT source tree to work with the stm32l1-discovery
-board
-
-ChibiOS_doc/
-
--Documentation for ChibiOS/RT
-
-ChibiOS_2.4.3/
-
--Base code for ChibiOS, used as a reference for development in the stm32*-devel
-dirs.  There is useful code in ChibiOS_2.4.3/test/ and ChibiOS_2.4.3/testhal/
-to reference on using the OS's feature set.
+- The ARM Cortex-M3 code tree that runs on Exp4.  It contains ChibiOS/RT plus additional code to support the experiment
