@@ -1,0 +1,11 @@
+This simulates the IHU and EXP4 for the purpose of testing and debugging      
+the communication protocols laid out in "AMSAT Fox-1A: IHU to Experiment 4
+Interface Control Document".
+
+It outputs two executables each representing the IHU or EXP4, 
+(dummy_ihu and dummy_exp4). 
+
+TODO: 
+The process of sending and receiving and image has yet to be fully
+fleshed out as there are certain design decisions dealing with 
+message lengths that need to be decided.

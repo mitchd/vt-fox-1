@@ -1,7 +1,7 @@
 /*******************************************************************************
-# DUMMY IHU:                                                                  #
+# DUMMY IHU/EXP4:                                                             #
 # --------------------------------------------------------------------------- #
-#   This program simulates the IHU for the purpose of testing and debugging   #
+#   This simulates the IHU/EXP4 for the purpose of testing and debugging      #
 #   the communiction protocols laid out in "AMSAT Fox-1A: IHU to Experiment 4 #
 #   Interface Control Document".                                              #
 #                                                                             #

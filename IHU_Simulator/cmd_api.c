@@ -1,3 +1,14 @@
+/*******************************************************************************
+# CMD_API:                                                                    #
+# --------------------------------------------------------------------------- #
+# This API contains abstracted functions to send and receive messages from    #
+# IHU. It is designed to represent the IHU or the EXP4 board determined       #
+# at compile time.                                                            #
+#                                                                             #
+#   Author: Kevin Burns                                                       #
+*******************************************************************************/
+
+
 #include "cmd_api.h"
 
 /*******************************************************************************
