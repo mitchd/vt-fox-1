@@ -73,11 +73,11 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 //Line data for each "scan line" in the jpeg image
 //
 typedef struct{
-  uint8_t  line_num;	// 0-79, horizontal line number of the image.  Each line
+  uint32_t  line_num;	// 0-79, horizontal line number of the image.  Each line
 			//is 8 pixels tall
   uint32_t start_addr;  //Start address of the line data
   uint32_t end_addr;    //End address of the line data
-  uint8_t  chksum;      //8-bit checksum of the line data
+  uint32_t  chksum;      //8-bit checksum of the line data
 } line_data;
 
 //

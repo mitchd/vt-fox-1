@@ -37,7 +37,7 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 */
 
 #include "spi_flash.h"
-
+#include "uart_iface.h"
 
 static const SPIConfig spi1cfg = {
   NULL,         //Callback function
@@ -49,23 +49,23 @@ int generateLineIndex(void);
 
 
 static void flashSleep(void){
-  uint8_t flash_cmd = FLASH_SLEEP;
+  //uint8_t flash_cmd = FLASH_SLEEP;
   //NSS Low
-  spiSelect( &SPID1 );
+  //spiSelect( &SPID1 );
   //Transmit the write enable command
-  spiSend( &SPID1, 1, &flash_cmd );
+  //spiSend( &SPID1, 1, &flash_cmd );
   //Send NSS High (execute WEN)
-  spiUnselect( &SPID1 );
+  //spiUnselect( &SPID1 );
 }
 
 static void flashWake(void){
-  uint8_t flash_cmd = FLASH_WAKE;
+  //uint8_t flash_cmd = FLASH_WAKE;
   //NSS Low
-  spiSelect( &SPID1 );
+  //spiSelect( &SPID1 );
   //Transmit the write enable command
-  spiSend( &SPID1, 1, &flash_cmd );
+  //spiSend( &SPID1, 1, &flash_cmd );
   //Send NSS High (execute WEN)
-  spiUnselect( &SPID1 );
+  //spiUnselect( &SPID1 );
 }
 
 
@@ -269,16 +269,16 @@ void flashReadBytes( uint32_t addr, uint8_t* data, uint32_t n ){
  */
 
 uint16_t readLineFromSPI(int line, uint8_t *data) {
-  line_data *ld_spi = &((line_data*)SYSTEM_DATA_ADDR)[line];
+  uint32_t ld_spi = SYSTEM_DATA_ADDR+sizeof(line_data)*line;
   line_data ld;
   uint32_t len;
   uint8_t acc;
   unsigned int i;
 
   /* Pull the line_data struct for this line from spi flash */
-  flashReadBytes((uint32_t)ld_spi, (uint8_t*)&ld, sizeof(line_data));    
+  flashReadBytes(ld_spi, (uint8_t*)&ld, sizeof(line_data));    
   /* Using info in line_data struct, read the actual line */
-  len = ld.end_addr - ld.start_addr;
+  len = ld.end_addr - ld.start_addr + 1;
   flashReadBytes(ld.start_addr, data, len);
   /* Validate the checksum */
   /* We'll disable this for the time being
@@ -315,22 +315,27 @@ static uint8_t getNextImageByte(uint8_t *buf, uint32_t *curBufPosition,
 
    
 int generateLineIndex() {
-  uint8_t spibuf[128];
+  uint8_t spibuff[2];
+  spibuff[0] = 0;
+  spibuff[1] = 0;
   line_data ld;
-  uint32_t bufpos = 0, imgpos = IMAGE_DATA_START;
+  uint32_t imgpos = IMAGE_DATA_START;
   uint16_t word;
-  uint8_t one, two;
-  uint32_t linestart, lineend = IMAGE_DATA_START;
-  uint8_t rst, acc = 0;
+  uint32_t lineend = IMAGE_DATA_START;
+  uint32_t linestart = IMAGE_DATA_START;
+  uint8_t rst = 0;
   uint32_t line = 0;
-  one = getNextImageByte(spibuf, &bufpos, &imgpos);
-  linestart = 0;
   while (1) {
-    two = getNextImageByte(spibuf, &bufpos, &imgpos);
-    word = (one << 8) + two;
-    acc += two;
+    flashReadBytes(lineend++, &spibuff[0], 2);
+    word = (uint16_t)(spibuff[0] << 8) + (uint16_t)spibuff[1];
     if (word == 0xFFD9) {
       /* End of JPG condition */
+      ld.line_num = line;
+      ld.start_addr = linestart;  
+      ld.end_addr = lineend; 
+      ld.chksum = 0;
+      flashWriteBytes(SYSTEM_DATA_ADDR + sizeof(line_data) * line, (uint8_t*)&ld, sizeof(ld));
+      break;
     }
 
     if ((word & 0xFFD8) == 0xFFD0) {
@@ -344,16 +349,14 @@ int generateLineIndex() {
           line = (line & 0xFFFFFFF8) + rst + 8;
         }
       }
-      linestart = lineend; 
-      lineend = (imgpos - 128 + bufpos);
       ld.line_num = line;
       ld.start_addr = linestart;  
-      ld.end_addr = lineend;  
-      ld.chksum = acc;
-      flashWriteBytes(SYSTEM_DATA_ADDR + sizeof(line_data) * line, (uint8_t*)&ld, sizeof(ld));
-      acc = 0;
+      ld.end_addr = lineend; 
+      linestart = lineend+1;
+      ld.chksum = 0;
+      flashWriteBytes(SYSTEM_DATA_ADDR + sizeof(line_data) * line, (uint8_t*)&ld, sizeof(line_data));
+      line++;
     }
-      
   }
   return line;
 }
