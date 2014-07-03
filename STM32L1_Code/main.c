@@ -43,8 +43,8 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #include "camera_iface.h"
 #include "chprintf.h"
 
-WORKING_AREA(waUART_Thread, 512);
-WORKING_AREA(waCamera_Thread, 10240+5*1024);
+WORKING_AREA(waUART_Thread, UART_THREAD_SIZE);
+WORKING_AREA(waCamera_Thread, CAMERA_THREAD_SIZE);
 uint8_t cameraHealth = CAMERA_HEALTHY;
 uint8_t cameraThreadDone = CAMERA_THREAD_BUSY;
 /*
@@ -85,8 +85,8 @@ int main(void) {
   configureSPIFlash();
 
   //The UART thread should launch the camera thread at the appropriate time
-  //chThdCreateStatic(waCamera_Thread, sizeof(waCamera_Thread), HIGHPRIO,
-  //                  cameraControlThread,NULL);
+  chThdCreateStatic(waCamera_Thread, sizeof(waCamera_Thread), HIGHPRIO,
+                    cameraControlThread,NULL);
 
   //Make this thread low priority
   chThdSetPriority( IDLEPRIO );

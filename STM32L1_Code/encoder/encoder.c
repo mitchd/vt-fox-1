@@ -31,9 +31,6 @@ void jpeg_init(void)
     //       changes size and the Huffman tables are fixed so there
     //       is no need to actually send this information with each
     //       image.
-#ifndef RELEASE
-    huffman_start(IMG_HEIGHT & -8, IMG_WIDTH & -8);
-#endif
     // reset the DC values
     huffman_resetdc();
 }

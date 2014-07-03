@@ -66,8 +66,8 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #define SOFTWARE_BUILD  0x64 // 1.00
 
 #define UART_DBG_PRINT
-
-extern WORKING_AREA(waUART_Thread, 512);
+#define UART_THREAD_SIZE 2048 
+extern WORKING_AREA(waUART_Thread, UART_THREAD_SIZE);
 msg_t UART_Thread(void* arg);
 #define IHU_UART (BaseSequentialStream*)&SD3
 #define IHU_UART_DEV	&SD3

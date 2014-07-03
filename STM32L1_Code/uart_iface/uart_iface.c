@@ -147,7 +147,7 @@ msg_t UART_Thread(void* arg) {
     uint8_t write_data_buffer[MESSAGE_DATA_SIZE];
     uint8_t i;
     int line = 0;
-    uint8_t lineData[1023];
+    uint8_t lineData[1500];
     // Recorded events
     eventmask_t events;
 

@@ -308,7 +308,8 @@ void	fifoGrabBytes( uint8_t *buf, uint32_t n, uint8_t ignore );
 msg_t	setupSegment( uint8_t segment );
 
 //Camera control thread -- Needs just a little bit of memory
-extern  WORKING_AREA(waCamera_Thread, 10240+5*1024);
+#define CAMERA_THREAD_SIZE 20000 
+extern  WORKING_AREA(waCamera_Thread, CAMERA_THREAD_SIZE);
 /*
  * This is where the magic happens.  There are two phases of operation for this
  * thread:

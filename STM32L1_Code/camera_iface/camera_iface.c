@@ -112,7 +112,7 @@ static void prepareTimer(void){
 
 //Initiate SCCB start condition -- requires the timer
 static void startCondition(void){
-  chSysLockFromIsr();
+  //chSysLockFromIsr();
 
   //Pull SDA SCL High
   palWritePad(CAM_CTL_PORT, CAM_SDA, 1);
@@ -126,13 +126,13 @@ static void startCondition(void){
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
   gptPolledDelay(&GPTD3,CLK_DELAY);
 
-  chSysUnlockFromIsr();
+  //chSysUnlockFromIsr();
   return;
 }
 
 //Release the SCCB -- requires the timer
 static void stopCondition(void){
-  chSysLockFromIsr();
+  //chSysLockFromIsr();
   //Pull SDA Low
   palWritePad(CAM_CTL_PORT, CAM_SDA, 0);
   //Set SCL Low
@@ -145,7 +145,7 @@ static void stopCondition(void){
   //SDA High
   palWritePad(CAM_CTL_PORT, CAM_SDA, 1);
 
-  chSysUnlockFromIsr();
+  //chSysUnlockFromIsr();
   return;
 }
 
@@ -159,7 +159,7 @@ static void idleState(void){
 //Write a byte, MSB first, with don't-care at the end -- requires the timer
 static void writeByte(uint8_t byte){
 
-  chSysLockFromIsr();
+  //chSysLockFromIsr();
   //MSB Bit 7
   gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 0);
@@ -226,7 +226,7 @@ static void writeByte(uint8_t byte){
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
   gptPolledDelay(&GPTD3,CLK_DELAY);
   
-  chSysUnlockFromIsr();
+  //chSysUnlockFromIsr();
   //Re-assert the SDA
   palSetPadMode(CAM_CTL_PORT, CAM_SDA, PAL_MODE_OUTPUT_PUSHPULL |
                                        PAL_STM32_OSPEED_LOWEST );
@@ -235,7 +235,7 @@ static void writeByte(uint8_t byte){
 }
 
 static uint8_t readByte(void){ 
-  chSysLockFromIsr();
+  //chSysLockFromIsr();
   
   //Configure input pad 
   uint8_t byte = 0;
@@ -308,7 +308,7 @@ static uint8_t readByte(void){
   gptPolledDelay(&GPTD3,CLK_DELAY);
   palWritePad(CAM_CTL_PORT, CAM_SCL, 1);
   gptPolledDelay(&GPTD3,CLK_DELAY);
-  chSysUnlockFromIsr();
+  //chSysUnlockFromIsr();
   //Re-assert the SDA
   palSetPadMode(CAM_CTL_PORT, CAM_SDA, PAL_MODE_OUTPUT_OPENDRAIN |
                                        PAL_STM32_OSPEED_LOWEST );
@@ -553,7 +553,7 @@ msg_t cameraControlThread(void* arg){
         //powerdownCam();
         uint8_t bulk_reads;
         if( segment == 0 )
-	  fifoGrabBytes( pixelData, 0, 1 );
+	  fifoGrabBytes( pixelData, 0, 0 );
         for( bulk_reads=0; bulk_reads < NUM_READS; bulk_reads++ ){
           fifoGrabBytes( pixelData, READ_SIZE, 0 );
           //Process the line
