@@ -49,7 +49,7 @@ int generateLineIndex(void);
 
 
 static void flashSleep(void){
-  //uint8_t flash_cmd = FLASH_SLEEP;
+  uint8_t flash_cmd = FLASH_SLEEP;
   //NSS Low
   //spiSelect( &SPID1 );
   //Transmit the write enable command
@@ -59,7 +59,7 @@ static void flashSleep(void){
 }
 
 static void flashWake(void){
-  //uint8_t flash_cmd = FLASH_WAKE;
+  uint8_t flash_cmd = FLASH_WAKE;
   //NSS Low
   //spiSelect( &SPID1 );
   //Transmit the write enable command

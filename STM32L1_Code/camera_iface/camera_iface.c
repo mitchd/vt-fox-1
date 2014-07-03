@@ -52,6 +52,8 @@ static const GPTConfig gpt3cfg = {
 //
 #define HSTART (158) //Stole these magic numbers from the kernel driver
 #define HSTOP (14)
+//#define HSTART (650)
+//#define HSTOP (10)
 static const uint8_t cam_config[CONFIG_PAIRS][2] = {
   {CAM_CLKRC, 0x01},
   {CAM_COM3, 0x00}, //enable scaling
@@ -549,6 +551,7 @@ msg_t cameraControlThread(void* arg){
         while( palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
         //Disable WEN
         palClearPad( FIFO_CTL_PORT, FIFO_WEN );
+        //Can't power off because we need dram refresh
         //Poweroff cam
         //powerdownCam();
         uint8_t bulk_reads;
