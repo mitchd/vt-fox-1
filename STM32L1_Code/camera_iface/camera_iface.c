@@ -52,8 +52,6 @@ static const GPTConfig gpt3cfg = {
 //
 #define HSTART (158) //Stole these magic numbers from the kernel driver
 #define HSTOP (14)
-//#define HSTART (650)
-//#define HSTOP (10)
 static const uint8_t cam_config[CONFIG_PAIRS][2] = {
   {CAM_CLKRC, 0x01},
   {CAM_COM3, 0x00}, //enable scaling
@@ -423,7 +421,7 @@ void wakeupCam(){
 void powerdownCam(){
   palSetPad(CAM_PORT, CAM_PWDN);
 }
-#define SEG0_VSTART 10
+#define SEG0_VSTART 10 
 #define SEG0_VSTOP 250
 #define SEG1_VSTART 250
 #define SEG1_VSTOP 490
@@ -431,7 +429,11 @@ msg_t setupSegment( uint8_t segment )
 { 
   
   uint8_t vstrt, vstop, vref;
-  if( segment == 0 ){ //"Upper" Half of image
+  if( segment == 3 ){
+    vstrt = SEG0_VSTART >> 2;  
+    vstop = SEG1_VSTOP >> 2;
+    vref = 0x00 | (SEG0_VSTART & 0x3) | ((SEG1_VSTOP & 0x3) <<2);
+  }else if( segment == 0 ){ //"Upper" Half of image
     vstrt = SEG0_VSTART >> 2;  
     vstop = SEG0_VSTOP >> 2;
     vref = 0x00 | (SEG0_VSTART & 0x3) | ((SEG0_VSTOP & 0x3) <<2);
@@ -518,18 +520,20 @@ msg_t cameraControlThread(void* arg){
 
   //chprintf(IHU_UART,"Configure Camera\r\n");
   msg_t success = configureCam();
+  setupSegment(3);
+  chThdSleepMilliseconds(500);
   uint8_t segment;
   jpeg_init();
-  for( segment = 0; segment < 2; segment++ )
+  for( segment = 0; segment < 3; segment++ )
   {
     //Wakeup Camera
-    wakeupCam();
+    //wakeupCam();
     //Wait 1ms per datasheet
-    gptPolledDelay( &GPTD3, PWR_DELAY );
+    //gptPolledDelay( &GPTD3, PWR_DELAY );
     if( success == RDY_OK ){  
       //Ensure WEN is disabled
       palClearPad( FIFO_CTL_PORT, FIFO_WEN );
-      if( setupSegment( segment ) != RDY_OK ){
+      if( setupSegment( segment < 2 ? 0 : 1 ) != RDY_OK ){
         //segmentNumber--;
         chprintf(DBG_UART,"SETUP FAILED\r\n");
         cameraHealth = CAMERA_FAILED;
@@ -551,17 +555,15 @@ msg_t cameraControlThread(void* arg){
         while( palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
         //Disable WEN
         palClearPad( FIFO_CTL_PORT, FIFO_WEN );
-        //Can't power off because we need dram refresh
         //Poweroff cam
         //powerdownCam();
-        uint8_t bulk_reads;
-        if( segment == 0 )
-	  fifoGrabBytes( pixelData, 0, 0 );
-        for( bulk_reads=0; bulk_reads < NUM_READS; bulk_reads++ ){
-          fifoGrabBytes( pixelData, READ_SIZE, 0 );
-          //Process the line
-          encode_line_yuv( pixelData, bulk_reads + NUM_READS*segment );
-          //sdWrite( IHU_UART_DEV, &pixelData[0], READ_SIZE );
+        if(segment != 0){
+          uint8_t bulk_reads;
+          for( bulk_reads=0; bulk_reads < NUM_READS; bulk_reads++ ){
+            fifoGrabBytes( pixelData, READ_SIZE, 0 );
+            //Process the line
+            encode_line_yuv( pixelData, bulk_reads + NUM_READS*(segment-1) );
+          }
         }
       }
     }
@@ -584,4 +586,6 @@ msg_t cameraControlThread(void* arg){
   sdWrite( IHU_UART_DEV, pixelData, remainder );
 #endif //~RELEASE
   cameraThreadDone = CAMERA_THREAD_DONE;
+
+  return RDY_OK;
 }

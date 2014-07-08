@@ -565,10 +565,6 @@ void huffman_start(int16_t height, int16_t width)
 	write_DHTinfo();
 	write_DRIinfo();    // set restart interval length
 	write_SOSinfo();
-#ifndef RELEASE
-        write_jpeg(jpgbuff, jpgn);
-        jpgn = 0;
-#endif //~RELEASE
 	huffman_ctx[2].dc = 
 	huffman_ctx[1].dc = 
 	huffman_ctx[0].dc = 0;
