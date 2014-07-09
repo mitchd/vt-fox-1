@@ -502,6 +502,7 @@ msg_t cameraControlThread(void* arg){
   const uint16_t IMG_WIDTH = 640;
   const uint16_t READ_SIZE = IMG_WIDTH*2*8;
   const uint16_t NUM_READS = 30;
+  uint16_t bulk_reads;
   cameraThreadDone = CAMERA_THREAD_BUSY;
   cameraHealth = CAMERA_HEALTHY;
   chThdSetPriority( HIGHPRIO );
@@ -526,12 +527,13 @@ msg_t cameraControlThread(void* arg){
   {
     if( success == RDY_OK ){  
       //Ensure WEN is disabled
-      palClearPad( FIFO_CTL_PORT, FIFO_WEN );
-      if( setupSegment( 1 ) != RDY_OK ){
+      //palClearPad( FIFO_CTL_PORT, FIFO_WEN );
+      if( setupSegment( segment ) != RDY_OK ){
         //segmentNumber--;
         chprintf(DBG_UART,"SETUP FAILED\r\n");
         cameraHealth = CAMERA_FAILED;
         cameraThreadDone = CAMERA_THREAD_DONE;
+        break;
       }else{
         //Reset the read pointer
         resetReadPointer();
@@ -549,13 +551,10 @@ msg_t cameraControlThread(void* arg){
         while( palReadPad( CAM_PORT2, CAM_VSYNC_OUT ) );
         //Disable WEN
         palClearPad( FIFO_CTL_PORT, FIFO_WEN );
-        //Poweroff cam
-        //powerdownCam();
-        uint8_t bulk_reads;
         for( bulk_reads=0; bulk_reads < NUM_READS; bulk_reads++ ){
           fifoGrabBytes( pixelData, READ_SIZE, 0 );
           //Process the line
-          encode_line_yuv( pixelData, bulk_reads + NUM_READS*(segment) );
+          encode_line_yuv( pixelData, bulk_reads + (NUM_READS*segment) );
         }
       }
     }
