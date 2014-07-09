@@ -13,8 +13,12 @@ uint32_t file_addr_ptr = IMAGE_DATA_START;
 
 void write_jpeg(uint8_t* buff, unsigned size)
 {
+#ifndef RAW_OUTPUT
     flashWriteBytes( file_addr_ptr, buff, size );
-    file_addr_ptr += (uint32_t)size;
+    file_addr_ptr += (uint32_t)size; 
+#else
+    sdWrite(IHU_UART_DEV, buff, size);
+#endif
 }
 
 uint32_t jpeg_addr_ptr(void)

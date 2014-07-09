@@ -3,9 +3,9 @@
 
 #include "stdint.h"
 
-#ifdef RELEASE
+//#ifdef RELEASE
   #include "halconf.h"
-#endif //RELEASE
+//#endif //RELEASE
 
 // enable VT watermark
 #define ENABLE_WATERMARK (1)

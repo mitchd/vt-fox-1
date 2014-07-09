@@ -429,11 +429,7 @@ msg_t setupSegment( uint8_t segment )
 { 
   
   uint8_t vstrt, vstop, vref;
-  if( segment == 3 ){
-    vstrt = SEG0_VSTART >> 2;  
-    vstop = SEG1_VSTOP >> 2;
-    vref = 0x00 | (SEG0_VSTART & 0x3) | ((SEG1_VSTOP & 0x3) <<2);
-  }else if( segment == 0 ){ //"Upper" Half of image
+  if( segment == 0 ){ //"Upper" Half of image
     vstrt = SEG0_VSTART >> 2;  
     vstop = SEG0_VSTOP >> 2;
     vref = 0x00 | (SEG0_VSTART & 0x3) | ((SEG0_VSTOP & 0x3) <<2);
@@ -520,20 +516,18 @@ msg_t cameraControlThread(void* arg){
 
   //chprintf(IHU_UART,"Configure Camera\r\n");
   msg_t success = configureCam();
-  setupSegment(3);
-  chThdSleepMilliseconds(500);
+  //Wakeup Camera
+  wakeupCam();
+  //Wait 1ms per datasheet
+  gptPolledDelay( &GPTD3, PWR_DELAY );
   uint8_t segment;
   jpeg_init();
-  for( segment = 0; segment < 3; segment++ )
+  for( segment = 0; segment < 2; segment++ )
   {
-    //Wakeup Camera
-    //wakeupCam();
-    //Wait 1ms per datasheet
-    //gptPolledDelay( &GPTD3, PWR_DELAY );
     if( success == RDY_OK ){  
       //Ensure WEN is disabled
       palClearPad( FIFO_CTL_PORT, FIFO_WEN );
-      if( setupSegment( segment < 2 ? 0 : 1 ) != RDY_OK ){
+      if( setupSegment( 1 ) != RDY_OK ){
         //segmentNumber--;
         chprintf(DBG_UART,"SETUP FAILED\r\n");
         cameraHealth = CAMERA_FAILED;
@@ -557,34 +551,16 @@ msg_t cameraControlThread(void* arg){
         palClearPad( FIFO_CTL_PORT, FIFO_WEN );
         //Poweroff cam
         //powerdownCam();
-        if(segment != 0){
-          uint8_t bulk_reads;
-          for( bulk_reads=0; bulk_reads < NUM_READS; bulk_reads++ ){
-            fifoGrabBytes( pixelData, READ_SIZE, 0 );
-            //Process the line
-            encode_line_yuv( pixelData, bulk_reads + NUM_READS*(segment-1) );
-          }
+        uint8_t bulk_reads;
+        for( bulk_reads=0; bulk_reads < NUM_READS; bulk_reads++ ){
+          fifoGrabBytes( pixelData, READ_SIZE, 0 );
+          //Process the line
+          encode_line_yuv( pixelData, bulk_reads + NUM_READS*(segment) );
         }
       }
     }
   }
   jpeg_close();
-#ifndef RELEASE
-  uint32_t image_end = jpeg_addr_ptr();
-  uint32_t image_start = IMAGE_DATA_START;
-  uint32_t num_steps = (image_end-image_start)/SERIAL_BUFFERS_SIZE;
-  uint32_t image_ptr = image_start;
-  uint32_t step = 0;
-  for(; step < num_steps; step++)
-  {
-    flashReadBytes( image_ptr, pixelData, SERIAL_BUFFERS_SIZE );
-    sdWrite( IHU_UART_DEV, pixelData, SERIAL_BUFFERS_SIZE );
-    image_ptr += SERIAL_BUFFERS_SIZE;
-  }
-  uint32_t remainder = image_end - image_ptr;
-  flashReadBytes( image_ptr, pixelData, remainder );
-  sdWrite( IHU_UART_DEV, pixelData, remainder );
-#endif //~RELEASE
   cameraThreadDone = CAMERA_THREAD_DONE;
 
   return RDY_OK;
