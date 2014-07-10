@@ -192,30 +192,13 @@ void get_IMG(int ser) {
     msg[3] = EXP4_VER>>8;
     msg[2] = EXP4_VER;
 #endif
-    //Probe camera until ready
-    printf("Checking camera status\n");
-    int timeout = 10;
-    printf("Timeout = %d seconds\n",timeout);
-    int reply;
-    time_t start = time(NULL);
-    while(difftime(start,time(NULL)) < 10){
-      send_CMD(ser,RR);
-      reply = get_REPLY(ser);
-      if(reply == YY)
-        break;
-    }
     int outputfile;
     const char * name = "output.dat\n";
-    if(reply!=YY){
-      printf("Camera did not respond in time\n");
+    printf("Camera Ready to transmit, opening %s for writing\n", name);
+    outputfile = open(name, O_WRONLY );
+    if(!outputfile){
+      printf("File Open Failed\n");
       return;
-    }else{
-      printf("Camera Ready to transmit, opening %s for writing\n", name);
-      outputfile = open(name, O_WRONLY );
-      if(!outputfile){
-        printf("File Open Failed\n");
-        return;
-      }
     }
     char header[6];
     for(int i = 0; i<60; i++){

@@ -62,8 +62,8 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 #define MESSAGE_CMD_REPLY_SIZE 6
 #define MESSAGE_DATA_REPLY_SIZE 8
 
-#define MESSAGE_VERSION 110 // 1.10
-#define SOFTWARE_BUILD  100 // 1.00
+#define MESSAGE_VERSION 0x6E // 1.10
+#define SOFTWARE_BUILD  0x64 // 1.00
 
 #define UART_DBG_PRINT
 #define UART_THREAD_SIZE 2048 

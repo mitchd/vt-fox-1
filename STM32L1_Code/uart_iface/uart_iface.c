@@ -85,8 +85,8 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 
 void UART_Reply_Failed(uint8_t *buffer) {
     // Generate and return the message reply if the camera has failed
-    buffer[1] = MESSAGE_VERSION;
-    buffer[3] = SOFTWARE_BUILD;
+    buffer[0] = MESSAGE_VERSION;
+    buffer[2] = SOFTWARE_BUILD;
     buffer[4] = RESP_FAILED;
     buffer[5] = RESP_FAILED;
     sdAsynchronousWrite(IHU_UART_DEV, buffer, MESSAGE_CMD_REPLY_SIZE);
@@ -94,8 +94,8 @@ void UART_Reply_Failed(uint8_t *buffer) {
 
 void UART_Reply_NReady(uint8_t *buffer) {
     // Generate and return the message reply if the camera is not ready
-    buffer[1] = MESSAGE_VERSION;
-    buffer[3] = SOFTWARE_BUILD;
+    buffer[0] = MESSAGE_VERSION;
+    buffer[2] = SOFTWARE_BUILD;
     buffer[4] = RESP_NREADY;
     buffer[5] = RESP_NREADY;
     sdAsynchronousWrite(IHU_UART_DEV, buffer, MESSAGE_CMD_REPLY_SIZE);
@@ -103,16 +103,16 @@ void UART_Reply_NReady(uint8_t *buffer) {
 
 void UART_Reply_Ready(uint8_t *buffer) {
     // Generate and return the message reply if the camera is ready
-    buffer[1] = MESSAGE_VERSION;
-    buffer[3] = SOFTWARE_BUILD;
+    buffer[0] = MESSAGE_VERSION;
+    buffer[2] = SOFTWARE_BUILD;
     buffer[4] = RESP_READY;
     buffer[5] = RESP_READY;
     sdAsynchronousWrite(IHU_UART_DEV, buffer, MESSAGE_CMD_REPLY_SIZE);
 }
 
 void UART_Reply_Data(uint8_t line_ID, uint16_t length, uint8_t *data, uint8_t *buffer) {
-    buffer[1] = MESSAGE_VERSION;
-    buffer[3] = SOFTWARE_BUILD;
+    buffer[0] = MESSAGE_VERSION;
+    buffer[2] = SOFTWARE_BUILD;
     // Line ID is the 6 MSB and length is 10 LSB in the first two bytes
     buffer[4] = length & 0xFF;
     buffer[5] = (line_ID << 2) | ((length & 0x300) >> 8);
@@ -178,7 +178,7 @@ msg_t UART_Thread(void* arg) {
             } else {
                 // Ensure that the message version is correct and bytes 4 and 5
                 // are identical
-                if (read_buffer[1] != MESSAGE_VERSION || read_buffer[0] != 0x0) {
+                if (read_buffer[0] != MESSAGE_VERSION || read_buffer[1] != 0x0) {
                     #ifdef UART_DBG_PRINT
                     chprintf(DBG_UART, "UART message version incorrect!\r\n");
                     #endif
