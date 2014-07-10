@@ -11,7 +11,7 @@
 #include "cmd_api.h"
 
 //Defines
-#define DEFAULT_DEV "/dev/ttyS0"
+#define DEFAULT_DEV "/dev/ttyUSB0"
 #define DEFAULT_BAUDRATE 38400
 
 /*******************************************************************************
@@ -70,7 +70,6 @@ int main(int argc,char **argv) {
         state = get_REPLY(ser);
         switch (state) {
             case YY:
-                send_CMD(ser,TT);
                 get_IMG(ser);
                 break;
             case FF:

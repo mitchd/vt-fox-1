@@ -5,7 +5,7 @@ EXE_IHU=dummy_ihu
 
 #generic
 CC=gcc
-CFLAGS=-g -Wall
+CFLAGS=-g -Wall -std=c99
 IHU_D=-D DUMMY_IHU
 
 all: $(EXE_IHU) $(EXE_EXP4)

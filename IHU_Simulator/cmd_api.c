@@ -10,6 +10,8 @@
 
 
 #include "cmd_api.h"
+#include "time.h"
+#include "fcntl.h"
 
 /*******************************************************************************
 # SEND_CMD (IHU)
@@ -178,8 +180,8 @@ int get_REPLY(int ser) {
 *******************************************************************************/
 void get_IMG(int ser) {
 
+    int err = 0;
     char msg[6];
-    printf (" --> get_IMG(int) is still unimplemented\n");
     //Add header to message
     msg[1] = MSG_VER>>8;
     msg[0] = MSG_VER;     
@@ -190,33 +192,77 @@ void get_IMG(int ser) {
     msg[3] = EXP4_VER>>8;
     msg[2] = EXP4_VER;
 #endif
-
-    /*
-#for loop here
-    msg = []
-    for i in range(0,5):
-        data = ser.read(1)
-        msg.append(struct.unpack("B", data)[0])
-        print 'msg[' + str(i) + '] = ' + str(msg[i])
-
-    descriptor = msg[1];#struct.unpack("P", data)
-    print 'd: ' + str(descriptor)
-
-    data = ser.read(2)
-    descriptor = struct.unpack("<H", data)[0]
-    data1 = ser.read(1) #descriptor&0x3FF)
-    data2 = ser.read(2)
-    print 'd: ' + str(descriptor)
-
-    linenum = descriptor >> 10
-    payload = struct.unpack("<B", data1)[0]
-    chksum = struct.unpack("<H", data2)[0]
-
-    print 'p: ' + str(payload)
-    print 'l: ' + str(linenum)
-    print 'pl: ' + str(descriptor&0x3FF)
-    print 'c: ' + str(chksum)
-    */
+    //Probe camera until ready
+    printf("Checking camera status\n");
+    int timeout = 10;
+    printf("Timeout = %d seconds\n",timeout);
+    int reply;
+    time_t start = time(NULL);
+    while(difftime(start,time(NULL)) < 10){
+      send_CMD(ser,RR);
+      reply = get_REPLY(ser);
+      if(reply == YY)
+        break;
+    }
+    int outputfile;
+    const char * name = "output.dat\n";
+    if(reply!=YY){
+      printf("Camera did not respond in time\n");
+      return;
+    }else{
+      printf("Camera Ready to transmit, opening %s for writing\n", name);
+      outputfile = open(name, O_WRONLY );
+      if(!outputfile){
+        printf("File Open Failed\n");
+        return;
+      }
+    }
+    char header[6];
+    for(int i = 0; i<60; i++){
+       send_CMD(ser,TT);
+       if(read(ser,header,6) == -1) {
+        err = errno; 
+        printf("ERROR: read failed with %d strerror(%s)\n",err,strerror(err));
+        close(ser);
+        exit(1);
+       }
+       int linenum = header[4]>>2;
+       int payloadsize = (header[4]&0x3)<<2 | header[5];
+       printf("Line Number: %d\n", linenum);
+       printf("Payload Size: %d\n", payloadsize);
+       if(payloadsize < 0 || payloadsize > 1023){
+         //something is terribly wrong
+         printf("Badness in header\n");
+         close(outputfile);
+         close(ser);
+         return;
+       }
+       char * data = (char*)malloc(payloadsize);
+       //receive line
+       if(read(ser,data,payloadsize)==-1){
+         err = errno;
+         printf("ERROR: read failed with %d strerror(%s)\n",err,strerror(err));
+         close(outputfile);
+         close(ser);
+         exit(1);
+       }
+       if((payloadsize = write(outputfile,data,payloadsize))==-1){
+         printf("Error writing to output file\n");
+         close(outputfile);
+         close(ser);
+         exit(1);
+       }
+       printf("Wrode %d bytes\n",payloadsize);
+       int chksum;
+       for (i = 0; i < payloadsize; i++) {
+         chksum += data[i];
+       }
+       chksum = chksum&0xFF;
+       read(ser,data,2);
+       int rxchksum = data[0] + (data[1]<<8);
+       printf("Computed Checksum %d\n",chksum);
+       printf("Recieved Checksum %d\n",rxchksum);
+    }
 }
 
 

@@ -178,7 +178,7 @@ CPPWARN = -Wall -Wextra
 #
 
 # List all default C defines here, like -D_DEBUG=1
-DDEFS = -DRAW_OUTPUT
+DDEFS = -DRELEASE
 
 # List all default ASM defines here, like -D_DEBUG=1
 DADEFS =
