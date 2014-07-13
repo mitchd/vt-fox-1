@@ -185,12 +185,12 @@ void get_IMG(int ser) {
         close(outputfile);
         exit(1);
        }
-       //if(bytes != 6){
-       // printf("ERROR: Only %d bytes read\n",bytes);
-       // close(ser);
-       // close(outputfile);
-       // exit(1);
-       //}
+       if(bytes != 6){
+        printf("ERROR: Only %d bytes read\n",bytes);
+        close(ser);
+        close(outputfile);
+        exit(1);
+       }
        int linenum = (header[5]>>2)&0x3F;
        int payloadsize = (((int)(header[5]&0x3))<<2) | header[4];
        printf("Line Number: %d\n", linenum);
