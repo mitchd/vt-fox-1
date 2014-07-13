@@ -85,8 +85,10 @@ This entire project is licensed under the GNU Public License (GPL) Version 3:
 
 void UART_Reply_Failed(uint8_t *buffer) {
     // Generate and return the message reply if the camera has failed
-    buffer[0] = MESSAGE_VERSION;
-    buffer[2] = SOFTWARE_BUILD;
+    buffer[0] = (uint8_t)(MESSAGE_VERSION&0xFF);
+    buffer[1] = (uint8_t)(MESSAGE_VERSION>>8);
+    buffer[2] = (uint8_t)(SOFTWARE_BUILD&0xFF);
+    buffer[3] = (uint8_t)(SOFTWARE_BUILD>>8);
     buffer[4] = RESP_FAILED;
     buffer[5] = RESP_FAILED;
     sdAsynchronousWrite(IHU_UART_DEV, buffer, MESSAGE_CMD_REPLY_SIZE);
@@ -94,8 +96,10 @@ void UART_Reply_Failed(uint8_t *buffer) {
 
 void UART_Reply_NReady(uint8_t *buffer) {
     // Generate and return the message reply if the camera is not ready
-    buffer[0] = MESSAGE_VERSION;
-    buffer[2] = SOFTWARE_BUILD;
+    buffer[0] = (uint8_t)(MESSAGE_VERSION&0xFF);
+    buffer[1] = (uint8_t)(MESSAGE_VERSION>>8);
+    buffer[2] = (uint8_t)(SOFTWARE_BUILD&0xFF);
+    buffer[3] = (uint8_t)(SOFTWARE_BUILD>>8);
     buffer[4] = RESP_NREADY;
     buffer[5] = RESP_NREADY;
     sdAsynchronousWrite(IHU_UART_DEV, buffer, MESSAGE_CMD_REPLY_SIZE);
@@ -103,30 +107,33 @@ void UART_Reply_NReady(uint8_t *buffer) {
 
 void UART_Reply_Ready(uint8_t *buffer) {
     // Generate and return the message reply if the camera is ready
-    buffer[0] = MESSAGE_VERSION;
-    buffer[2] = SOFTWARE_BUILD;
+    buffer[0] = (uint8_t)(MESSAGE_VERSION&0xFF);
+    buffer[1] = (uint8_t)(MESSAGE_VERSION>>8);
+    buffer[2] = (uint8_t)(SOFTWARE_BUILD&0xFF);
+    buffer[3] = (uint8_t)(SOFTWARE_BUILD>>8);
     buffer[4] = RESP_READY;
     buffer[5] = RESP_READY;
     sdAsynchronousWrite(IHU_UART_DEV, buffer, MESSAGE_CMD_REPLY_SIZE);
 }
 
 void UART_Reply_Data(uint8_t line_ID, uint16_t length, uint8_t *data, uint8_t *buffer) {
-    buffer[0] = MESSAGE_VERSION;
-    buffer[2] = SOFTWARE_BUILD;
+    buffer[0] = (uint8_t)(MESSAGE_VERSION&0xFF);
+    buffer[1] = (uint8_t)(MESSAGE_VERSION>>8);
+    buffer[2] = (uint8_t)(SOFTWARE_BUILD&0xFF);
+    buffer[3] = (uint8_t)(SOFTWARE_BUILD>>8);
     // Line ID is the 6 MSB and length is 10 LSB in the first two bytes
     buffer[4] = length & 0xFF;
     buffer[5] = (line_ID << 2) | ((length & 0x300) >> 8);
     // Copy the data to send to the buffer
-    uint16_t i, chksum = 0;
+    uint16_t i;
+    uint16_t chksum = 0;
     for (i = 0; i < length; i++) {
-        buffer[6+i] = data[i];
-        chksum += data[i];
+        chksum = chksum + data[i];
     }
-    // Write the checksum to the buffer
-    buffer[6+length+1] = chksum;
-    buffer[6+length+0] = chksum >> 8;
 
-    sdAsynchronousWrite(IHU_UART_DEV, buffer, MESSAGE_DATA_REPLY_SIZE + length);
+    sdAsynchronousWrite(IHU_UART_DEV, buffer, 6);
+    sdAsynchronousWrite(IHU_UART_DEV, data, length&0x3FF);
+    sdAsynchronousWrite(IHU_UART_DEV, (uint8_t*)&chksum, 2);
 }
 
 msg_t UART_Thread(void* arg) {
@@ -144,7 +151,6 @@ msg_t UART_Thread(void* arg) {
     // device 
     uint8_t read_buffer[MESSAGE_CMD_SIZE] = {0};
     uint8_t write_cmd_buffer[MESSAGE_CMD_REPLY_SIZE] = {0};
-    uint8_t write_data_buffer[MESSAGE_DATA_SIZE];
     uint8_t i;
     int line = 0;
     uint8_t lineData[1500];
@@ -178,7 +184,9 @@ msg_t UART_Thread(void* arg) {
             } else {
                 // Ensure that the message version is correct and bytes 4 and 5
                 // are identical
-                if (read_buffer[0] != MESSAGE_VERSION || read_buffer[1] != 0x0) {
+                uint16_t rcvd_msg_ver;
+		memcpy(&rcvd_msg_ver,&read_buffer[0],2);
+                if (rcvd_msg_ver != MESSAGE_VERSION) {
                     #ifdef UART_DBG_PRINT
                     chprintf(DBG_UART, "UART message version incorrect!\r\n");
                     #endif
@@ -214,7 +222,7 @@ msg_t UART_Thread(void* arg) {
                                 UART_Reply_Failed(write_cmd_buffer);
                             } else {
                                 uint16_t numBytes;
-                                numBytes = readLineFromSPI( line++, &lineData[0] );
+                                numBytes = readLineFromSPI( line, &lineData[0] );
 				//readLineFromSPI returns 0 if internal chksum
 				//fails
 				//TODO:  Check to see what desired operation is
@@ -224,6 +232,7 @@ msg_t UART_Thread(void* arg) {
 				} else {
                                    UART_Reply_Data(line, numBytes, &lineData[0],write_cmd_buffer); 
 				}
+                                line++;
                             }
                             break;
                         default:

@@ -9,7 +9,7 @@
 *******************************************************************************/
 
 #include "cmd_api.h"
-
+#include "unistd.h"
 //Defines
 #define DEFAULT_DEV "/dev/ttyUSB0"
 #define DEFAULT_BAUDRATE 38400
@@ -78,8 +78,14 @@ int main(int argc,char **argv) {
                 break;
             case NN:
                 sleep(1);
+                printf("Not ready, wait 1s\n");
+                sleep(1);
                 send_CMD(ser,RR);
                 break;
+            default:
+                printf("Unknown packet received, wait 1s\n");
+                sleep(1);
+                send_CMD(ser,RR);
         }
     }
 #elif DUMMY_EXP4

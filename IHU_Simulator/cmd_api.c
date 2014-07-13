@@ -66,14 +66,14 @@ void send_CMD(int ser, int msgtype) {
     }
 
     //Add header
-    msg[0] = MSG_VER>>8;
-    msg[1] = MSG_VER;     
+    msg[1] = (MSG_VER>>8)&0xFF;
+    msg[0] = MSG_VER&0xFF;     
 #if DUMMY_IHU
-    msg[2] = IHU_VER>>8;
-    msg[3] = IHU_VER;
+    msg[3] = IHU_VER>>8;
+    msg[2] = IHU_VER&0xFF;
 #elif DUMMY_EXP4
-    msg[2] = EXP4_VER>>8;
-    msg[3] = EXP4_VER;
+    msg[3] = EXP4_VER>>8;
+    msg[2] = EXP4_VER&0xFF;
 #endif
 
     //Send Message
@@ -114,7 +114,7 @@ int get_REPLY(int ser) {
     int ret = 0;
     int err = 0;
 
-    if ((ret = read(ser,rcvd,sizeof rcvd)) == -1) {
+    if ((ret = read(ser,rcvd,6)) == -1) {
         err = errno;
         printf("ERROR: read failed with %d strerror(%s)\n",err,strerror(err));
         exit(1);
@@ -129,21 +129,6 @@ int get_REPLY(int ser) {
     if (MSG_VER != msg_ver) {
         printf("WARNING: msg version mismatch %d vs %d\n",MSG_VER,msg_ver);
     }
-#if DUMMY_IHU
-
-    memcpy(&ihu_ver,rcvd+2,sizeof(uint16_t));
-
-    if (IHU_VER != ihu_ver) {
-        printf("WARNING: ihu version mismatch %d vs %d\n",IHU_VER,ihu_ver);
-    }
-#elif DUMMY_EXP4
-    memcpy(&exp4_ver,rcvd+2,sizeof(uint16_t));
-
-    if (EXP4_VER != exp4_ver) {
-        printf("WARNING: exp4 version mismatch %d vs %d\n",EXP4_VER,exp4_ver);
-    }
-#endif
-
 #if DUMMY_IHU
     if ((rcvd[4] == 'N') && (rcvd[5] == 'N'))
         return NN;
@@ -181,36 +166,33 @@ int get_REPLY(int ser) {
 void get_IMG(int ser) {
 
     int err = 0;
-    char msg[6];
-    //Add header to message
-    msg[1] = MSG_VER>>8;
-    msg[0] = MSG_VER;     
-#if DUMMY_IHU
-    msg[3] = IHU_VER>>8;
-    msg[2] = IHU_VER;
-#elif DUMMY_EXP4
-    msg[3] = EXP4_VER>>8;
-    msg[2] = EXP4_VER;
-#endif
     int outputfile;
-    const char * name = "output.dat\n";
+    const char * name = "output.dat\0";
     printf("Camera Ready to transmit, opening %s for writing\n", name);
-    outputfile = open(name, O_WRONLY );
+    outputfile = open(name, O_WRONLY | O_CREAT );
     if(!outputfile){
       printf("File Open Failed\n");
       return;
     }
     char header[6];
+    int bytes;
     for(int i = 0; i<60; i++){
        send_CMD(ser,TT);
-       if(read(ser,header,6) == -1) {
+       if((bytes = read(ser,header,6)) == -1) {
         err = errno; 
         printf("ERROR: read failed with %d strerror(%s)\n",err,strerror(err));
         close(ser);
+        close(outputfile);
         exit(1);
        }
-       int linenum = header[4]>>2;
-       int payloadsize = (header[4]&0x3)<<2 | header[5];
+       //if(bytes != 6){
+       // printf("ERROR: Only %d bytes read\n",bytes);
+       // close(ser);
+       // close(outputfile);
+       // exit(1);
+       //}
+       int linenum = (header[5]>>2)&0x3F;
+       int payloadsize = (((int)(header[5]&0x3))<<2) | header[4];
        printf("Line Number: %d\n", linenum);
        printf("Payload Size: %d\n", payloadsize);
        if(payloadsize < 0 || payloadsize > 1023){
@@ -231,6 +213,8 @@ void get_IMG(int ser) {
        }
        if((payloadsize = write(outputfile,data,payloadsize))==-1){
          printf("Error writing to output file\n");
+         err = errno;
+         printf("ERROR: write failed with %d strerror(%s)\n",err,strerror(err));
          close(outputfile);
          close(ser);
          exit(1);
@@ -240,9 +224,9 @@ void get_IMG(int ser) {
        for (i = 0; i < payloadsize; i++) {
          chksum += data[i];
        }
-       chksum = chksum&0xFF;
+       chksum = chksum&0xFFFF;
        read(ser,data,2);
-       int rxchksum = data[0] + (data[1]<<8);
+       int rxchksum = data[0] + (((int)data[1])<<8);
        printf("Computed Checksum %d\n",chksum);
        printf("Recieved Checksum %d\n",rxchksum);
     }
